@@ -13,7 +13,7 @@ export default function RootLayout() {
   });
 
   if (!loaded) {
-    // Async font loading only occurs in development.
+    // Async font loadig only occurs in development.
     return null;
   }
 
@@ -22,6 +22,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
+
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
