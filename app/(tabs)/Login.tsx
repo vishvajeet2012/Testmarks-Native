@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { login } from "@/redux/slice/authSlice";
+import { AppDispatch, RootState } from "@/redux/store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  ColorSchemeName,
   Image,
   Pressable,
   StatusBar,
@@ -11,19 +17,47 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+
+
+type RootStackParamList = {
+  Home: undefined;
+  Login: undefined;
+  // Add other screens here
+};
+
+type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
+
+// Theme interface
+interface Theme {
+  background: string;
+  surface: string;
+  text: string;
+  textSecondary: string;
+  placeholder: string;
+  inputBackground: string;
+  inputBorder: string;
+  primary: string;
+  primaryDisabled: string;
+  errorBackground: string;
+  errorText: string;
+  overlayColor: string;
+}
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [isCheckingToken, setIsCheckingToken] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
   
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const dispatch = useDispatch<AppDispatch>();
+  const navigation = useNavigation<LoginScreenNavigationProp>();
+  const { loading, error, user, token } = useSelector((state: RootState) => state.auth);
+  
+  const colorScheme: ColorSchemeName = useColorScheme();
+  const isDark: boolean = colorScheme === 'dark';
 
   // Dynamic theme colors
-  const theme = {
+  const theme: Theme = {
     background: isDark ? '#121212' : '#fff',
     surface: isDark ? '#1e1e1e' : '#fff',
     text: isDark ? '#ffffff' : '#333333',
@@ -38,51 +72,63 @@ export default function LoginScreen() {
     overlayColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)',
   };
 
-  const handleLogin = async () => {
-    // Clear previous errors
-    setError("");
+  useEffect(() => {
+    checkExistingToken();
+  }, []);
 
-    // Basic validation
-    if (!email.trim()) {
-      setError("Please enter your email");
-      return;
-    }
-
-    if (!password.trim()) {
-      setError("Please enter your password");
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock login logic - replace with actual authentication
-      if (email === "user@example.com" && password === "password123") {
-        Alert.alert("Success", "Login successful!");
-        // Navigate to next screen or handle successful login
-      } else {
-        setError("Invalid email or password");
+  useEffect(() => {
+    if (token) {
+      try {
+        navigation.replace('Home');
+      } catch (error) {
+        console.log('Home not found, trying other routes...', error);
       }
-    } catch (err) {
-      setError("Login failed. Please try again.");
+    }
+  }, [token, navigation]);
+
+  const checkExistingToken = async (): Promise<void> => {
+    try {
+      const savedToken = await AsyncStorage.getItem('userToken');
+      if (savedToken) {
+        try {
+          navigation.replace('Home');
+        } catch (error) {
+          console.log('Navigation error, will handle after component loads', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking token:', error);
     } finally {
-      setLoading(false);
+      setIsCheckingToken(false);
     }
   };
 
-  const handleSignup = () => {
+  const handleLogin = async (): Promise<void> => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      const result = await dispatch(login({ email, password })).unwrap();
+      console.log('Login successful:', result);
+      
+      if (result.token) {
+        await AsyncStorage.setItem('userToken', result.token);
+      }
+    } catch (error) {
+      const errorMessage = typeof error === 'string' ? error : 'Something went wrong';
+      Alert.alert('Login Failed', errorMessage);
+    }
+  };
+
+  const handleSignup = (): void => {
     Alert.alert("Signup", "Navigate to signup screen");
     // Add navigation logic here
+  };
+
+  const handleForgotPassword = (): void => {
+    Alert.alert("Forgot Password", "Navigate to forgot password screen");
   };
 
   if (isCheckingToken) {
@@ -114,7 +160,7 @@ export default function LoginScreen() {
 
       <View style={[styles.loginContainer, { backgroundColor: theme.surface }]}>
         <Text style={[styles.welcomeText, { color: theme.text }]}>
-          Welcome Back
+          Welcome
         </Text>
         
         <View style={styles.inputContainer}>
@@ -131,7 +177,7 @@ export default function LoginScreen() {
             placeholderTextColor={theme.placeholder}
             placeholder="Enter your email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text: string) => setEmail(text)}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!loading}
@@ -153,7 +199,7 @@ export default function LoginScreen() {
             placeholder="Enter your password"
             secureTextEntry
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text: string) => setPassword(text)}
             editable={!loading}
           />
         </View>
@@ -189,7 +235,7 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.forgotPasswordContainer}>
-          <Pressable onPress={() => Alert.alert("Forgot Password", "Navigate to forgot password screen")}>
+          <Pressable onPress={handleForgotPassword}>
             <Text style={[styles.forgotPasswordText, { color: theme.primary }]}>
               Forgot Password?
             </Text>
@@ -250,7 +296,6 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    // Subtle shadow for depth
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: {
@@ -276,7 +321,6 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     paddingHorizontal: 20,
     fontSize: 16,
-    // Enhanced focus states
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
