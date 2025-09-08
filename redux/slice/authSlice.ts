@@ -39,7 +39,7 @@ interface LoginResponse {
 
 interface LoadTokenResponse {
   token: string;
-  user: User;
+  user: any;
 }
 
 interface RegisterResponse {
@@ -54,18 +54,18 @@ export const loadToken = createAsyncThunk<
 >("auth/loadToken", async (_, { rejectWithValue }) => {
   try {
     const savedToken = await AsyncStorage.getItem("token");
+   
     if (!savedToken) return null;
-
-    const res = await axios.get<{ user: User }>(`${Serverurl}/api/auth/me`, {
+    const res = await axios.get<{ user: User }>(`https://serversql-6vbfv.vercel.app/api/auth/me`, {
       headers: {
         Authorization: `Bearer ${savedToken}`,
         "Content-Type": "application/json",
       },
     });
-
     return { token: savedToken, user: res.data.user };
   } catch (err) {
     const error = err as AxiosError;
+    console.log(error,"erorr got ")
     return rejectWithValue(error.message || "Failed to load token");
   }
 });
@@ -84,7 +84,6 @@ export const login = createAsyncThunk<
 
     const { token, user, message } = res.data;
     await AsyncStorage.setItem("token", token)
-    console.log(token)
     return { token, user, message };
   } catch (err) {
     const error = err as AxiosError;
@@ -139,6 +138,8 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+  
+
       // Load token
       .addCase(loadToken.pending, (state) => {
         state.loading = true;
@@ -193,6 +194,7 @@ const authSlice = createSlice({
         state.error = null;
         state.message = undefined;
       });
+      
   },
 });
 

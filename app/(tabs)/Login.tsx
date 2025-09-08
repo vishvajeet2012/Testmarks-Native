@@ -52,10 +52,9 @@ export default function LoginScreen() {
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { loading, error, user, token } = useSelector((state: RootState) => state.auth);
-  
+  console.log(token, "vish")
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDark: boolean = colorScheme === 'dark';
-
   // Dynamic theme colors
   const theme: Theme = {
     background: isDark ? '#121212' : '#fff',
