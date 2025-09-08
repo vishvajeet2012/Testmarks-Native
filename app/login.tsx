@@ -3,6 +3,7 @@ import { AppDispatch, RootState } from "@/redux/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,16 +20,14 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
-
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
-  // Add other screens here
+  AdminDashboard: undefined;
 };
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
-// Theme interface
 interface Theme {
   background: string;
   surface: string;
@@ -44,18 +43,21 @@ interface Theme {
   overlayColor: string;
 }
 
-export default function LoginScreen() {
+function hasRole(user: any): user is { role: string } {
+  return user && typeof user.role === 'string';
+}
+
+export default async function LoginScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
-  
+  const router = useRouter();
+
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const { loading, error, user, token } = useSelector((state: RootState) => state.auth);
-  console.log(token, "vish")
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDark: boolean = colorScheme === 'dark';
-  // Dynamic theme colors
   const theme: Theme = {
     background: isDark ? '#121212' : '#fff',
     surface: isDark ? '#1e1e1e' : '#fff',
@@ -75,22 +77,40 @@ export default function LoginScreen() {
     checkExistingToken();
   }, []);
 
+  
+      const savedToken = await AsyncStorage.getItem("token");
+if(savedToken) return null; /// null token 
   useEffect(() => {
-    if (token) {
+    if (token && user) {
       try {
-        navigation.replace('Home');
+        if (hasRole(user) && user.role === 'Admin') {
+          router.replace('/adminHomeScreen');
+        }else if(hasRole(user) && user.role === 'Student') {
+          router.replace('/studentHomeScreen');
+        }else if(hasRole(user) && user.role === "Teacher") 
+        {
+          router.replace("/teacherHomeScreen")
+        }
       } catch (error) {
-        console.log('Home not found, trying other routes...', error);
+        console.log('Navigation error:', error);
       }
     }
-  }, [token, navigation]);
+  }, [token, user, router]);
 
   const checkExistingToken = async (): Promise<void> => {
     try {
       const savedToken = await AsyncStorage.getItem('userToken');
       if (savedToken) {
+
         try {
-          navigation.replace('Home');
+           if (hasRole(user) && user.role === 'Admin') {
+          router.replace('/adminHomeScreen');
+        }else if(hasRole(user) && user.role === 'Student') {
+          router.replace('/studentHomeScreen');
+        }else if(hasRole(user) && user.role === "Teacher") 
+        {
+          router.replace("/teacherHomeScreen")
+        }
         } catch (error) {
           console.log('Navigation error, will handle after component loads', error);
         }
@@ -110,20 +130,16 @@ export default function LoginScreen() {
 
     try {
       const result = await dispatch(login({ email, password })).unwrap();
-      console.log('Login successful:', result);
       
       if (result.token) {
         await AsyncStorage.setItem('userToken', result.token);
+        
+        // Navigation will be handled by the useEffect that watches token and user
       }
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Something went wrong';
       Alert.alert('Login Failed', errorMessage);
     }
-  };
-
-  const handleSignup = (): void => {
-    Alert.alert("Signup", "Navigate to signup screen");
-    // Add navigation logic here
   };
 
   const handleForgotPassword = (): void => {
@@ -150,7 +166,7 @@ export default function LoginScreen() {
 
       <View style={styles.imageContainer}>
         <Image
-          source={require("../../assets/images/pexels-willoworld-3768005.jpg")}
+          source={require("../assets/images/pexels-willoworld-3768005.jpg")}
           style={styles.logo}
           resizeMode="cover" 
         />
@@ -223,7 +239,7 @@ export default function LoginScreen() {
         <View style={styles.signupContainer}>
           <Pressable 
             style={styles.signupButtonContainer} 
-            onPress={handleSignup}
+            onPress={() => router.push("/Signup")}
             disabled={loading}
           >
             <Text style={[styles.signupBtn, { color: theme.textSecondary }]}>

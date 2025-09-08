@@ -96,6 +96,8 @@ function RootLayoutContent() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack initialRouteName={initialScreen}>
+                        <Stack.Screen name="login" options={{ headerShown: false }} />
+
         <Stack.Screen name="Signup" options={{ headerShown: false }} />
         <Stack.Screen name="studentHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="teacherHomeScreen" options={{ headerShown: false }} />

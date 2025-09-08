@@ -6,9 +6,12 @@ import axios, { AxiosError } from "axios";
 // Types
 interface User {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  mobileNumber: string;
   email: string;
+  password:string;
+  firstName:string;
+  lastName:string;
 }
 
 interface AuthState {
@@ -25,10 +28,10 @@ interface LoginCredentials {
 }
 
 interface RegisterCredentials {
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
+  mobileNumber:string
 }
 
 interface LoginResponse {
@@ -44,15 +47,18 @@ interface LoadTokenResponse {
 
 interface RegisterResponse {
   message: string;
+  user:any;
+  token:any
 }
 
-// Async thunks
 export const loadToken = createAsyncThunk<
   LoadTokenResponse | null,
   void,
   { rejectValue: string }
 >("auth/loadToken", async (_, { rejectWithValue }) => {
   try {
+    
+   //await AsyncStorage.removeItem('token')  
     const savedToken = await AsyncStorage.getItem("token");
    
     if (!savedToken) return null;
@@ -65,7 +71,6 @@ export const loadToken = createAsyncThunk<
     return { token: savedToken, user: res.data.user };
   } catch (err) {
     const error = err as AxiosError;
-    console.log(error,"erorr got ")
     return rejectWithValue(error.message || "Failed to load token");
   }
 });
@@ -76,7 +81,6 @@ export const login = createAsyncThunk<
   { rejectValue: string }
 >("auth/login", async ({ email, password }, { rejectWithValue }) => {
   try {
-   console.log(email,password,)
     const res = await axios.post<LoginResponse>(`${Serverurl}/api/auth/login`, { 
       email, 
       password 
@@ -95,17 +99,17 @@ export const register = createAsyncThunk<
   RegisterResponse,
   RegisterCredentials,
   { rejectValue: string }
->("auth/register", async ({ firstName, lastName, email, password }, { rejectWithValue }) => {
+>("auth/register", async ({ name, email, password ,mobileNumber  }, { rejectWithValue }) => {
   try {
-    const res = await axios.post<RegisterResponse>(`serversql-6vbfv.vercel.app/api/auth/register`, {
-      firstName,
-      lastName,
+    const res = await axios.post<RegisterResponse>(`${Serverurl}/api/auth/register`, {
+      name,
       email,
+      mobileNumber,
       password,
     });
-
-    return res.data;
+    return res?.data;
   } catch (err) {
+    console.log(err)
     const error = err as AxiosError;
     return rejectWithValue(error.message || "Registration failed");
   }
@@ -181,6 +185,7 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action: PayloadAction<RegisterResponse>) => {
         state.loading = false;
         state.message = action.payload.message;
+        state.user = action.payload.user
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
