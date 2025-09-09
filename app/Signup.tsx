@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,6 +30,7 @@ type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signu
 function hasRole(user: any): user is { role: string } {
   return user && typeof user.role === 'string';
 }
+
 interface Theme {
   background: string;
   surface: string;
@@ -44,21 +45,21 @@ interface Theme {
   errorText: string;
 }
 
-export default async function SignupScreen() {
+export default function SignupScreen() {
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [mobileNumber, setMobileNumber] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-    const router = useRouter();
-
-
+  const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
   
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<SignupScreenNavigationProp>();
-  const { loading, error ,user } = useSelector((state: RootState) => state.auth);
+  const { loading, error, user } = useSelector((state: RootState) => state.auth);
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDark: boolean = colorScheme === 'dark';
+  
   const theme: Theme = {
     background: isDark ? '#121212' : '#fff',
     surface: isDark ? '#1e1e1e' : '#fff',
@@ -73,8 +74,23 @@ export default async function SignupScreen() {
     errorText: '#d32f2f',
   };
 
-      const savedToken = await AsyncStorage.getItem("token");
-if(savedToken) return null; /// null token 
+  useEffect(() => {
+    const checkExistingToken = async () => {
+      try {
+        const savedToken = await AsyncStorage.getItem("token");
+        if (savedToken) {
+          
+        }
+      } catch (error) {
+        console.log('Error checking token:', error);
+      } finally {
+        setIsCheckingToken(false);
+      }
+    };
+    
+    checkExistingToken();
+  }, []);
+
   const handleSignup = async (): Promise<void> => {
     if (!name || !email || !mobileNumber || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -101,22 +117,17 @@ if(savedToken) return null; /// null token
     try {
       const result = await dispatch(register({ name, email, mobileNumber, password })).unwrap();
 
-
-
-
-      
       if (result?.token) {
         await AsyncStorage.setItem('token', result?.token);
-      
       }
-        if (hasRole(user) && user.role === 'Admin') {
-          router.replace('/adminHomeScreen');
-        }else if(hasRole(user) && user.role === 'Student') {
-          router.replace('/studentHomeScreen');
-        }else if(hasRole(user) && user.role === "Teacher") 
-        {
-          router.replace("/teacherHomeScreen")
-        }
+      console.log(user)
+      if (hasRole(user) && user.role === 'Admin') {
+        router.replace('/adminHomeScreen');
+      } else if (hasRole(user) && user.role === 'Student') {
+        router.replace('/studentHomeScreen');
+      } else if (hasRole(user) && user.role === "Teacher") {
+        router.replace("/teacherHomeScreen");
+      }
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Something went wrong';
       Alert.alert('Signup Failed', errorMessage);
@@ -126,6 +137,17 @@ if(savedToken) return null; /// null token
   const handleLoginRedirect = (): void => {
     router.push('/login');
   };
+
+  if (isCheckingToken) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[{ color: theme.text, marginTop: 16, fontSize: 16 }]}>
+          Loading...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

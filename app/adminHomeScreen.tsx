@@ -16,13 +16,20 @@ export default function AdminHomeScreen() {
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.card}
-          onPress={() => router.push("/studentHomeSceen")}
+          onPress={() => router.push({
+            pathname: "/manageUser",
+            params: { role: "Student" }
+          })}
         >
           <ThemedText type="defaultSemiBold">Manage Students</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.card}
+          onPress={() => router.push({
+            pathname: "/manageUser",
+            params: { role: "Teacher" }
+          })}
         >
           <ThemedText type="defaultSemiBold">Manage Teachers</ThemedText>
         </TouchableOpacity>

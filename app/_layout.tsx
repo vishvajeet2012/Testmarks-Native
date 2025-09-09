@@ -2,10 +2,11 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 import { Provider, useSelector } from 'react-redux';
 
+import LoadingScreen from '@/components/Loading';
 import { useAppDispatch } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { loadToken } from '@/redux/slice/authSlice';
@@ -84,12 +85,7 @@ function RootLayoutContent() {
 
   if (!isReady || isLoading || !initialScreen) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#e11b23" />
-        <Text style={styles.loadingText}>
-          {!isReady ? 'Loading' : 'Loading...'}
-        </Text>
-      </View>
+     <LoadingScreen/>
     );
   }
 
@@ -101,6 +97,7 @@ function RootLayoutContent() {
         <Stack.Screen name="Signup" options={{ headerShown: false }} />
         <Stack.Screen name="studentHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="teacherHomeScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="manageUser" options={{headerShown:false}}/>
         <Stack.Screen 
           name="adminHomeScreen" 
           initialParams={user } 

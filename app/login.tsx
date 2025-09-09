@@ -47,7 +47,7 @@ function hasRole(user: any): user is { role: string } {
   return user && typeof user.role === 'string';
 }
 
-export default async function LoginScreen() {
+export default function LoginScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
@@ -77,19 +77,23 @@ export default async function LoginScreen() {
     checkExistingToken();
   }, []);
 
-  
+  useEffect(() => {
+    const checkToken = async () => {
       const savedToken = await AsyncStorage.getItem("token");
-if(savedToken) return null; /// null token 
+      if (savedToken) return null;
+    };
+    checkToken();
+  }, []);
+
   useEffect(() => {
     if (token && user) {
       try {
         if (hasRole(user) && user.role === 'Admin') {
           router.replace('/adminHomeScreen');
-        }else if(hasRole(user) && user.role === 'Student') {
+        } else if (hasRole(user) && user.role === 'Student') {
           router.replace('/studentHomeScreen');
-        }else if(hasRole(user) && user.role === "Teacher") 
-        {
-          router.replace("/teacherHomeScreen")
+        } else if (hasRole(user) && user.role === "Teacher") {
+          router.replace("/teacherHomeScreen");
         }
       } catch (error) {
         console.log('Navigation error:', error);
@@ -101,16 +105,14 @@ if(savedToken) return null; /// null token
     try {
       const savedToken = await AsyncStorage.getItem('userToken');
       if (savedToken) {
-
         try {
-           if (hasRole(user) && user.role === 'Admin') {
-          router.replace('/adminHomeScreen');
-        }else if(hasRole(user) && user.role === 'Student') {
-          router.replace('/studentHomeScreen');
-        }else if(hasRole(user) && user.role === "Teacher") 
-        {
-          router.replace("/teacherHomeScreen")
-        }
+          if (hasRole(user) && user.role === 'Admin') {
+            router.replace('/adminHomeScreen');
+          } else if (hasRole(user) && user.role === 'Student') {
+            router.replace('/studentHomeScreen');
+          } else if (hasRole(user) && user.role === "Teacher") {
+            router.replace("/teacherHomeScreen");
+          }
         } catch (error) {
           console.log('Navigation error, will handle after component loads', error);
         }
@@ -133,8 +135,6 @@ if(savedToken) return null; /// null token
       
       if (result.token) {
         await AsyncStorage.setItem('userToken', result.token);
-        
-        // Navigation will be handled by the useEffect that watches token and user
       }
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Something went wrong';

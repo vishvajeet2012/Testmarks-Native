@@ -58,7 +58,7 @@ export const loadToken = createAsyncThunk<
 >("auth/loadToken", async (_, { rejectWithValue }) => {
   try {
     
-   //await AsyncStorage.removeItem('token')  
+// await AsyncStorage.removeItem('token')  
     const savedToken = await AsyncStorage.getItem("token");
    
     if (!savedToken) return null;
