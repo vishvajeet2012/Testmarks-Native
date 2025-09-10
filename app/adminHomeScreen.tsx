@@ -21,7 +21,7 @@ export default function AdminHomeScreen() {
             params: { role: "Student" }
           })}
         >
-          <ThemedText type="defaultSemiBold">Manage Students</ThemedText>
+          <ThemedText style={styles.cardText} type="defaultSemiBold">Manage Students</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -31,7 +31,7 @@ export default function AdminHomeScreen() {
             params: { role: "Teacher" }
           })}
         >
-          <ThemedText type="defaultSemiBold">Manage Teachers</ThemedText>
+          <ThemedText  style={styles.cardText} type="defaultSemiBold">Manage Teachers</ThemedText>
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -41,11 +41,13 @@ export default function AdminHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginTop:20,
     padding: 20,
   },
   header: {
     alignItems: "flex-start",
     marginBottom: 30,
+    fontSize:20
   },
   actions: {
     flexDirection: "row",
@@ -53,7 +55,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   card: {
-    backgroundColor: "#eee",
+    backgroundColor: "#e11b23",
     paddingVertical: 20,
     paddingHorizontal: 25,
     borderRadius: 12,
@@ -65,5 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
     marginHorizontal: 5,
-  },
+  },cardText:{
+    color:"white"
+  }
 });

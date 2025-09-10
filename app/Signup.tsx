@@ -56,12 +56,12 @@ export default function SignupScreen() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<SignupScreenNavigationProp>();
-  const { loading, error, user } = useSelector((state: RootState) => state.auth);
+  const { loading, registerError, user, token, message } = useSelector((state: RootState) => state.auth);
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDark: boolean = colorScheme === 'dark';
   
   const theme: Theme = {
-    background: isDark ? '#121212' : '#fff',
+    background: isDark ? '#272424ff' : '#fff',
     surface: isDark ? '#1e1e1e' : '#fff',
     text: isDark ? '#ffffff' : '#333333',
     textSecondary: isDark ? '#b3b3b3' : '#666666',
@@ -78,8 +78,14 @@ export default function SignupScreen() {
     const checkExistingToken = async () => {
       try {
         const savedToken = await AsyncStorage.getItem("token");
-        if (savedToken) {
-          
+        if (savedToken && user) {
+          if (hasRole(user) && user.role === 'Admin') {
+            router.replace('/adminHomeScreen');
+          } else if (hasRole(user) && user.role === 'Student') {
+            router.replace('/studentHomeScreen');
+          } else if (hasRole(user) && user.role === "Teacher") {
+            router.replace("/teacherHomeScreen");
+          }
         }
       } catch (error) {
         console.log('Error checking token:', error);
@@ -89,9 +95,52 @@ export default function SignupScreen() {
     };
     
     checkExistingToken();
-  }, []);
+  }, [message]);
+
+  useEffect(() => {
+    if (token) {
+      try {
+        if (hasRole(user) && user.role === 'Admin') {
+          router.replace('/adminHomeScreen');
+        } else if (hasRole(user) && user.role === 'Student') {
+          router.replace('/studentHomeScreen');
+        } else if (hasRole(user) && user.role === "Teacher") {
+          router.replace("/teacherHomeScreen");
+        }
+      } catch (error) {
+        console.log('Navigation error:', error);
+      }
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (message) {
+      Alert.alert('Success', message);
+    }
+    
+  }, [message]);
+
+  const getErrorMessage = (error: string): string => {
+    if (error === "Request failed with status code 409") {
+      return "User already exists with this email";
+    }
+    if (error === "Request failed with status code 400") {
+      return "User already exists with this email";
+    }
+    if (error === "Request failed with status code 500") {
+      return "Server error. Please try again later";
+    }
+    if (error.includes("email")) {
+      return "Please enter a valid email address";
+    }
+    if (error.includes("password")) {
+      return "Password must be at least 6 characters long";
+    }
+    return error || "An unexpected error occurred";
+  };
 
   const handleSignup = async (): Promise<void> => {
+  
     if (!name || !email || !mobileNumber || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
@@ -99,6 +148,11 @@ export default function SignupScreen() {
 
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters long');
       return;
     }
 
@@ -110,27 +164,23 @@ export default function SignupScreen() {
 
     const mobileRegex = /^[0-9]{10,15}$/;
     if (!mobileRegex.test(mobileNumber)) {
-      Alert.alert('Error', 'Please enter a valid mobile number');
+      Alert.alert('Error', 'Please enter a valid mobile number (10-15 digits)');
       return;
     }
 
     try {
-      const result = await dispatch(register({ name, email, mobileNumber, password })).unwrap();
+      const result = await dispatch(register({ 
+        name, 
+        email, 
+        mobileNumber, 
+        password 
+      })).unwrap();
 
       if (result?.token) {
-        await AsyncStorage.setItem('token', result?.token);
-      }
-      console.log(user)
-      if (hasRole(user) && user.role === 'Admin') {
-        router.replace('/adminHomeScreen');
-      } else if (hasRole(user) && user.role === 'Student') {
-        router.replace('/studentHomeScreen');
-      } else if (hasRole(user) && user.role === "Teacher") {
-        router.replace("/teacherHomeScreen");
+        await AsyncStorage.setItem('userToken', result.token);
       }
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Something went wrong';
-      Alert.alert('Signup Failed', errorMessage);
     }
   };
 
@@ -292,7 +342,7 @@ export default function SignupScreen() {
           </Pressable>
         </View>
 
-        {error && (
+        {registerError && (
           <View style={[
             styles.errorContainer, 
             { 
@@ -301,7 +351,7 @@ export default function SignupScreen() {
             }
           ]}>
             <Text style={[styles.errorText, { color: theme.errorText }]}>
-              {error}
+              {getErrorMessage(registerError)}
             </Text>
           </View>
         )}

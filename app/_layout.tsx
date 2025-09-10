@@ -24,19 +24,15 @@ function RootLayoutContent() {
   
 
   const determineInitialScreen = useCallback(() => {
-    console.log('Determining initial screen with:', { hasToken: !!token, userRole: user?.role });
 
     if (!token) {
-      console.log('No token, setting initial screen to Signup');
       return 'Signup';
     }
 
     if (!user || !user.role) {
-      console.log('Token exists but no user role, setting initial screen to Signup');
       return 'Signup';
     }
 
-    // Determine screen based on user role
     switch (user.role) {
       case 'Teacher':
         return 'teacherHomeScreen';
@@ -54,10 +50,8 @@ function RootLayoutContent() {
 
     const initializeAuth = async () => {
       try {
-        console.log('Dispatching loadToken...');
         const result = await dispatch(loadToken());
         
-        console.log('LoadToken result:', result);
         if (mounted) {
           setIsReady(true);
         }
@@ -93,11 +87,12 @@ function RootLayoutContent() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack initialRouteName={initialScreen}>
                         <Stack.Screen name="login" options={{ headerShown: false }} />
-
+    <Stack.Screen name='adduserbyadmin' options={{headerShown:false}}/>
         <Stack.Screen name="Signup" options={{ headerShown: false }} />
         <Stack.Screen name="studentHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="teacherHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="manageUser" options={{headerShown:false}}/>
+        <Stack.Screen name="forgetPassowrd" options={{headerShown:false}} />
         <Stack.Screen 
           name="adminHomeScreen" 
           initialParams={user } 

@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   ColorSchemeName,
-  Image,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -40,22 +39,28 @@ interface Theme {
   primaryDisabled: string;
   errorBackground: string;
   errorText: string;
-  overlayColor: string;
+  roleButton: string;
+  roleButtonSelected: string;
+  roleButtonText: string;
+  roleButtonTextSelected: string;
 }
 
 function hasRole(user: any): user is { role: string } {
   return user && typeof user.role === 'string';
 }
 
+type UserRole = 'Student' | 'Teacher' | 'Admin';
+
 export default function LoginScreen() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('Student');
   const [isCheckingToken, setIsCheckingToken] = useState<boolean>(true);
   const router = useRouter();
 
   const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const { loading, error, user, token } = useSelector((state: RootState) => state.auth);
+  const { loading, loginError, user, token, message } = useSelector((state: RootState) => state.auth);
   const colorScheme: ColorSchemeName = useColorScheme();
   const isDark: boolean = colorScheme === 'dark';
   const theme: Theme = {
@@ -70,7 +75,10 @@ export default function LoginScreen() {
     primaryDisabled: isDark ? '#555555' : '#cccccc',
     errorBackground: isDark ? '#2d1b1b' : '#ffe6e6',
     errorText: '#d32f2f',
-    overlayColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.3)',
+    roleButton: isDark ? '#2a2a2a' : '#f0f0f0',
+    roleButtonSelected: '#e11b23',
+    roleButtonText: isDark ? '#ffffff' : '#333333',
+    roleButtonTextSelected: '#ffffff',
   };
 
   useEffect(() => {
@@ -99,7 +107,9 @@ export default function LoginScreen() {
         console.log('Navigation error:', error);
       }
     }
-  }, [token, user, router]);
+  }, [token, user]);
+
+
 
   const checkExistingToken = async (): Promise<void> => {
     try {
@@ -114,7 +124,7 @@ export default function LoginScreen() {
             router.replace("/teacherHomeScreen");
           }
         } catch (error) {
-          console.log('Navigation error, will handle after component loads', error);
+          console.log( error);
         }
       }
     } catch (error) {
@@ -131,19 +141,39 @@ export default function LoginScreen() {
     }
 
     try {
-      const result = await dispatch(login({ email, password })).unwrap();
+      const result = await dispatch(login({ 
+        email, 
+        password, 
+        role: selectedRole 
+      })).unwrap();
       
       if (result.token) {
         await AsyncStorage.setItem('userToken', result.token);
       }
     } catch (error) {
       const errorMessage = typeof error === 'string' ? error : 'Something went wrong';
-      Alert.alert('Login Failed', errorMessage);
     }
   };
 
   const handleForgotPassword = (): void => {
-    Alert.alert("Forgot Password", "Navigate to forgot password screen");
+  router.push("/forgetPassowrd")          
+
+  };
+
+  const getErrorMessage = (error: string): string => {
+    if (error === "Request failed with status code 401") {
+      return "Email or password is incorrect";
+    }
+     if (error === "Request failed with status code 403") {
+      return "Invalid role specified";
+    }
+    if (error === "Request failed with status code 404") {
+      return "User not found";
+    }
+    if (error === "Request failed with status code 500") {
+      return "Server error. Please try again later";
+    }
+    return error || "An unexpected error occurred";
   };
 
   if (isCheckingToken) {
@@ -164,19 +194,84 @@ export default function LoginScreen() {
         backgroundColor={isDark ? "#000" : "#fff"} 
       />
 
-      <View style={styles.imageContainer}>
-        <Image
-          source={require("../assets/images/pexels-willoworld-3768005.jpg")}
-          style={styles.logo}
-          resizeMode="cover" 
-        />
-        <View style={[styles.imageOverlay, { backgroundColor: theme.overlayColor }]} />
-      </View>
-
       <View style={[styles.loginContainer, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.welcomeText, { color: theme.text }]}>
-          Welcome
-        </Text>
+        {/* <Text style={[styles.headerText, { color: theme.text }]}>
+          Welcome Back
+        </Text>       */}
+        
+        <View style={styles.roleContainer}>
+          <Text style={[styles.roleLabel, { color: theme.text }]}>Login as:</Text>
+          <View style={styles.roleButtonsContainer}>
+            <Pressable 
+              style={[
+                styles.roleButton, 
+                { 
+                  backgroundColor: selectedRole === 'Student' 
+                    ? theme.roleButtonSelected 
+                    : theme.roleButton 
+                }
+              ]}
+              onPress={() => setSelectedRole('Student')}
+            >
+              <Text style={[
+                styles.roleButtonText,
+                { 
+                  color: selectedRole === 'Student' 
+                    ? theme.roleButtonTextSelected 
+                    : theme.roleButtonText 
+                }
+              ]}>
+                Student
+              </Text>
+            </Pressable>
+            
+            <Pressable 
+              style={[
+                styles.roleButton, 
+                { 
+                  backgroundColor: selectedRole === 'Teacher' 
+                    ? theme.roleButtonSelected 
+                    : theme.roleButton 
+                }
+              ]}
+              onPress={() => setSelectedRole('Teacher')}
+            >
+              <Text style={[
+                styles.roleButtonText,
+                { 
+                  color: selectedRole === 'Teacher' 
+                    ? theme.roleButtonTextSelected 
+                    : theme.roleButtonText 
+                }
+              ]}>
+                Teacher
+              </Text>
+            </Pressable>
+            
+            <Pressable 
+              style={[
+                styles.roleButton, 
+                { 
+                  backgroundColor: selectedRole === 'Admin' 
+                    ? theme.roleButtonSelected 
+                    : theme.roleButton 
+                }
+              ]}
+              onPress={() => setSelectedRole('Admin')}
+            >
+              <Text style={[
+                styles.roleButtonText,
+                { 
+                  color: selectedRole === 'Admin' 
+                    ? theme.roleButtonTextSelected 
+                    : theme.roleButtonText 
+                }
+              ]}>
+                Admin
+              </Text>
+            </Pressable>
+          </View>
+        </View>
         
         <View style={styles.inputContainer}>
           <TextInput
@@ -250,14 +345,14 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.forgotPasswordContainer}>
-          <Pressable onPress={handleForgotPassword}>
+          <Pressable onPress={()=>handleForgotPassword()}>
             <Text style={[styles.forgotPasswordText, { color: theme.primary }]}>
               Forgot Password?
             </Text>
           </Pressable>
         </View>
 
-        {error && (
+        {loginError && (
           <View style={[
             styles.errorContainer, 
             { 
@@ -266,7 +361,7 @@ export default function LoginScreen() {
             }
           ]}>
             <Text style={[styles.errorText, { color: theme.errorText }]}>
-              {error}
+              {getErrorMessage(loginError)}
             </Text>
           </View>
         )}
@@ -278,6 +373,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
+    justifyContent: 'center',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -287,21 +383,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
   },
-  imageContainer: {
-    height: "45%",
-    width: "100%",
-    position: "relative",
+  headerContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  logo: {
-    width: "100%",
-    height: "100%",
+  headerText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 30,
   },
-  imageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  subHeaderText: {
+    fontSize: 16,
+    textAlign: "center",
   },
   loginContainer: {
     flex: 1,
@@ -320,11 +414,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
   },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
+  roleContainer: {
+    width: "100%",
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  roleLabel: {
+    fontSize: 16,
+    marginBottom: 10,
+    fontWeight: "500",
+  },
+  roleButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  roleButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roleButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   inputContainer: {
     width: "100%",
@@ -402,3 +517,4 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 });
+
