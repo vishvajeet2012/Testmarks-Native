@@ -7,14 +7,19 @@ export default function AdminHomeScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
 
+  const handleLogout = () => {
+    router.replace("/login");
+  };
+
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
         <ThemedText style={styles.headerText} type="title">Hello, {params?.name}</ThemedText>
-        <TouchableOpacity style={styles.logoutButtonContainer}>
-         
-        <ThemedText  style={styles.logout} type="title">Logout</ThemedText>
-
+        <TouchableOpacity
+          style={styles.logoutButtonContainer}
+          onPress={handleLogout}
+        >
+          <ThemedText style={styles.logout} type="title">Logout</ThemedText>
         </TouchableOpacity>
       </View>
 
@@ -30,13 +35,20 @@ export default function AdminHomeScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card,styles.background,]}
           onPress={() => router.push({
             pathname: "/manageUser",
             params: { role: "Teacher" }
           })}
         >
-          <ThemedText  style={styles.cardText} type="defaultSemiBold">Manage Teachers</ThemedText>
+          <ThemedText style={[styles.cardText]} type="defaultSemiBold">Manage Teachers</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => router.push("/classmanagement")}
+        >
+          <ThemedText style={styles.cardText} type="defaultSemiBold">Manage Classes</ThemedText>
         </TouchableOpacity>
       </View>
     </ThemedView>
@@ -46,33 +58,32 @@ export default function AdminHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop:20,
+    marginTop: 20,
     padding: 20,
   },
   header: {
-  flexDirection:"row", 
-   alignItems: "center", 
-     justifyContent: "space-between",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 30,
-  },headerText:{
-    fontSize:20
   },
-  
-  logoutButtonContainer:{
-
-   paddingHorizontal:10,
-      borderRadius: 5,
-      backgroundColor:"#e11b23",
-     },
-
-logout:{
-    color:"white",
-  fontSize:16
+  headerText: {
+    fontSize: 20
+  },
+  logoutButtonContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 5,
+    backgroundColor: "#e11b23",
+  },
+  logout: {
+    color: "white",
+    fontSize: 16
   },
   actions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flexDirection: "column",
     marginTop: 10,
+    gap: 10,
   },
   card: {
     backgroundColor: "#e11b23",
@@ -85,9 +96,14 @@ logout:{
     elevation: 3,
     alignItems: "center",
     justifyContent: "center",
-    flex: 1,
-    marginHorizontal: 5,
-  },cardText:{
-    color:"white"
+    width: "100%",
+    maxWidth: 300,
+  },
+  background: {
+    backgroundColor: "#4169E1",
+  },
+
+  cardText: {
+    color: "white"
   }
 });

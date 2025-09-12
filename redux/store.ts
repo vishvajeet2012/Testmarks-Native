@@ -1,15 +1,20 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
+import createClassReducer from "./slice/createClass";
+import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice'; // Adjust path as needed
 import userReducer from './slice/userSlice';
-
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-        user: userReducer,
-         manageUser: manageUserReducer,
- class: classReducer,
+    user: userReducer,
+    manageUser: manageUserReducer,
+    class: classReducer,
+    classesGetAll: classesgetallReducer,
+    createClass: createClassReducer,
+
+
   },
 });
 

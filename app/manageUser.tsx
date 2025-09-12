@@ -320,13 +320,13 @@ export default function ManageUserScreen() {
                       <Ionicons name="school-outline" size={14} color={theme.primary} />
                       <Text style={styles.classesLabel}>Classes:</Text>
                     </View>
-                    <View style={styles.classesList}>
-                      {user.profile.class_assignments.map((classItem, index) => (
+                    {/* <View style={styles.classesList}>
+                      {user?.profile?.class_assignments?.map((classItem, index) => (
                         <View key={index} style={styles.classBadge}>
                           <Text style={styles.classText}>{classItem}</Text>
                         </View>
                       ))}
-                    </View>
+                    </View> */}
                   </View>
                 )}
               </>

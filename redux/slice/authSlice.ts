@@ -62,7 +62,7 @@ export const loadToken = createAsyncThunk<
   try {
 //await AsyncStorage.removeItem('token');
     const savedToken = await AsyncStorage.getItem("token");
-   
+   console.log(savedToken ," toekn check")
     if (!savedToken) return null;
     const res = await axios.get<{ user: User }>(`https://serversql-6vbfv.vercel.app/api/auth/me`, {
       headers: {

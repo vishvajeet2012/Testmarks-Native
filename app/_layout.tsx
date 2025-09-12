@@ -25,11 +25,11 @@ function RootLayoutContent() {
   const determineInitialScreen = useCallback(() => {
 
     if (!token) {
-      return 'Signup';
+      return 'login';
     }
 
     if (!user || !user.role) {
-      return 'Signup';
+      return 'login';
     }
 
     switch (user.role) {
@@ -40,7 +40,7 @@ function RootLayoutContent() {
       case 'Admin':
         return 'adminHomeScreen';
       default:
-        return 'Signup';
+        return 'login';
     }
   }, [token, user]);
 
