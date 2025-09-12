@@ -10,7 +10,12 @@ export default function AdminHomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
-        <ThemedText type="title">Hello, {params?.name}</ThemedText>
+        <ThemedText style={styles.headerText} type="title">Hello, {params?.name}</ThemedText>
+        <TouchableOpacity style={styles.logoutButtonContainer}>
+         
+        <ThemedText  style={styles.logout} type="title">Logout</ThemedText>
+
+        </TouchableOpacity>
       </View>
 
       <View style={styles.actions}>
@@ -45,9 +50,24 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    alignItems: "flex-start",
+  flexDirection:"row", 
+   alignItems: "center", 
+     justifyContent: "space-between",
     marginBottom: 30,
+  },headerText:{
     fontSize:20
+  },
+  
+  logoutButtonContainer:{
+
+   paddingHorizontal:10,
+      borderRadius: 5,
+      backgroundColor:"#e11b23",
+     },
+
+logout:{
+    color:"white",
+  fontSize:16
   },
   actions: {
     flexDirection: "row",

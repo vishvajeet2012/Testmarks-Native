@@ -3,7 +3,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios, { AxiosError } from "axios";
 
-// Types
 interface User {
   id: string;
   name: string;
@@ -19,7 +18,6 @@ interface AuthState {
   token: string | null;
   loading: boolean;
   
-  // Separate error states for each operation
   loginError: string | null;
   registerError: string | null;
   getMeError: string | null;

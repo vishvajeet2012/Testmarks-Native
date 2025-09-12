@@ -3,7 +3,6 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
-import 'react-native-reanimated';
 import { Provider, useSelector } from 'react-redux';
 
 import LoadingScreen from '@/components/Loading';

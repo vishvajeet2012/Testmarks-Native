@@ -1,19 +1,29 @@
 import LoadingScreen from "@/components/Loading";
+import { useAppSelector } from "@/hooks/reduxhooks";
 import { AppDispatch, RootState } from "@/redux/store";
 import { getRolebaseuser } from "@/thunk/auth/user";
+import {
+  manageStudentUser,
+  selectManageUserError,
+  selectManageUserLoading,
+  selectManageUserSuccess,
+  selectUpdatedUser,
+} from "@/thunk/user/userMange";
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View,
-  useColorScheme
+  useColorScheme,
+  View
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -27,8 +37,23 @@ interface User {
   profile_picture: string | null;
   created_at: string;
   updated_at: string;
-  class?: string;
-  subjectTeacher?: string;
+  profile: {
+    // Teacher profile
+    teacher_id?: number;
+    assigned_subjects?: string[];
+    class_assignments?: string[];
+    // Student profile
+    student_id?: number;
+    roll_number?: string;
+    class_id?: number;
+    section_id?: number;
+    dob?: string;
+    guardian_name?: string;
+    guardian_mobile_number?: string;
+    student_mobile_number?: string;
+    class_name?: string;
+    section_name?: string;
+  } | null;
 }
 
 const lightTheme = {
@@ -80,42 +105,115 @@ export default function ManageUserScreen() {
   const { role } = useLocalSearchParams<{ role?: string }>();
   const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Inactive">("All");
   const dispatch = useDispatch<AppDispatch>();
+  
+  const manageLoading = useAppSelector(selectManageUserLoading);
+  const manageSuccess = useAppSelector(selectManageUserSuccess);
+  const manageError = useAppSelector(selectManageUserError);
+  const updatedUser = useAppSelector(selectUpdatedUser);
+
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    mobile_number: '',
+    role: '',
+    status: ''
+  });
+
   const { users, count, isLoading, error } = useSelector(
     (state: RootState) => state.user
   );
-
   const styles = createStyles(theme);
 
   useEffect(() => {
     if (role) {
       dispatch(getRolebaseuser({ role }));
     }
-  }, [role]);
+  }, [role, dispatch]);
+
+  useEffect(() => {
+    if (manageSuccess && updatedUser) {
+      setIsEditModalVisible(false);
+      setSelectedUser(null);
+      if (role) {
+        dispatch(getRolebaseuser({ role }));
+      }
+    }
+  }, [manageSuccess, updatedUser, role, dispatch]);
+
+  useEffect(() => {
+    if (manageError) {
+      console.log("error")
+    }
+  }, [manageError]);
 
   const filteredUsers = (users || []).filter((user: any) => {
     if (statusFilter === "All") return true;
     return user.status === statusFilter;
   });
 
-  
   const handleAdd = (role?: string) => {
     if (!role) {
       console.warn("Role is missing");
       return;
-      }
-        router.push({
-        pathname: "/adduserbyadmin",
-        params: { role }
-      })
+    }
+    router.push({
+      pathname: "/adduserbyadmin",
+      params: { role }
+    });
   };
 
-  const handleUserAction = (user: User, action: string) => {
+  const openEditModal = (user: User) => {
+    setSelectedUser(user);
+    setEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      mobile_number: user.mobile_number || '',
+      role: user.role || '',
+      status: user.status || ''
+    });
+    setIsEditModalVisible(true);
+  };
+
+  const handleEditUser = () => {
+    if (!selectedUser) return;
+
+    const userData = {
+      user_id: selectedUser.user_id,
+      name: editForm.name.trim() || undefined,
+      email: editForm.email.trim() || undefined,
+      mobile_number: editForm.mobile_number.trim() || undefined,
+      role: editForm.role.trim() || undefined,
+      status: editForm.status.trim() || undefined,
+    };
+                Object.keys(userData).forEach(key => {
+      if (userData[key as keyof typeof userData] === undefined) {
+        delete userData[key as keyof typeof userData];
+      }
+    });
+
+    dispatch(manageStudentUser(userData));
+  };
+
+  const handleStatusToggle = (user: User) => {
+    const newStatus = user.status === "Active" ? "Inactive" : "Active";
+    const action = user.status === "Active" ? "Deactivate" : "Activate";
+    
     Alert.alert(
-      "User Action",
-      `${action} user: ${user.name}?`,
+      `${action} User`,
+      `Are you sure you want to ${action.toLowerCase()} ${user.name}?`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => console.log(`${action} user:`, user.user_id) }
+        { 
+          text: "Confirm", 
+          onPress: () => {
+            dispatch(manageStudentUser({
+              user_id: user.user_id,
+              status: newStatus
+            }))
+          }
+        }
       ]
     );
   };
@@ -168,19 +266,70 @@ export default function ManageUserScreen() {
           )}
         </View>
         
-        {(user.class || user.subjectTeacher) && (
+        {user.profile && (
           <View style={styles.additionalInfo}>
-            {user.class && (
-              <View style={styles.infoBadge}>
-                <Ionicons name="school-outline" size={14} color={theme.primary} />
-                <Text style={styles.infoBadgeText}>Class: {user.class}</Text>
-              </View>
+            {user.role === "Student" && (
+              <>
+                {user.profile.roll_number && (
+                  <View style={styles.infoBadge}>
+                    <Ionicons name="id-card-outline" size={14} color={theme.primary} />
+                    <Text style={styles.infoBadgeText}>Roll: {user.profile.roll_number}</Text>
+                  </View>
+                )}
+                {user.profile.class_name && (
+                  <View style={styles.infoBadge}>
+                    <Ionicons name="school-outline" size={14} color={theme.secondary} />
+                    <Text style={styles.infoBadgeText}>{user.profile.class_name}</Text>
+                  </View>
+                )}
+                {user.profile.section_name && (
+                  <View style={styles.infoBadge}>
+                    <Ionicons name="library-outline" size={14} color={theme.accent} />
+                    <Text style={styles.infoBadgeText}>{user.profile.section_name}</Text>
+                  </View>
+                )}
+                {user.profile.guardian_name && (
+                  <View style={styles.infoBadge}>
+                    <Ionicons name="people-outline" size={14} color={theme.textSecondary} />
+                    <Text style={styles.infoBadgeText}>Guardian: {user.profile.guardian_name}</Text>
+                  </View>
+                )}
+              </>
             )}
-            {user.subjectTeacher && (
-              <View style={styles.infoBadge}>
-                <Ionicons name="book-outline" size={14} color={theme.secondary} />
-                <Text style={styles.infoBadgeText}>Subject: {user.subjectTeacher}</Text>
-              </View>
+            
+            {user.role === "Teacher" && (
+              <>
+                {user.profile.assigned_subjects && user.profile.assigned_subjects.length > 0 && (
+                  <View style={styles.subjectsContainer}>
+                    <View style={styles.subjectsHeader}>
+                      <Ionicons name="book-outline" size={14} color={theme.secondary} />
+                      <Text style={styles.subjectsLabel}>Subjects:</Text>
+                    </View>
+                    <View style={styles.subjectsList}>
+                      {user.profile.assigned_subjects.map((subject, index) => (
+                        <View key={index} style={styles.subjectBadge}>
+                          <Text style={styles.subjectText}>{subject}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                {user.profile.class_assignments && user.profile.class_assignments.length > 0 && (
+                  <View style={styles.classesContainer}>
+                    <View style={styles.classesHeader}>
+                      <Ionicons name="school-outline" size={14} color={theme.primary} />
+                      <Text style={styles.classesLabel}>Classes:</Text>
+                    </View>
+                    <View style={styles.classesList}>
+                      {user.profile.class_assignments.map((classItem, index) => (
+                        <View key={index} style={styles.classBadge}>
+                          <Text style={styles.classText}>{classItem}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </>
             )}
           </View>
         )}
@@ -196,7 +345,7 @@ export default function ManageUserScreen() {
       <View style={styles.userActions}>
         <TouchableOpacity 
           style={styles.editBtn}
-          onPress={() => handleUserAction(user, "Edit")}
+          onPress={() => openEditModal(user)}
           activeOpacity={0.7}
         >
           <Ionicons name="pencil-outline" size={16} color={theme.primary} />
@@ -208,7 +357,7 @@ export default function ManageUserScreen() {
             styles.actionBtn, 
             user.status === "Active" ? styles.deactivateBtn : styles.activateBtn
           ]}
-          onPress={() => handleUserAction(user, user.status === "Active" ? "Deactivate" : "Activate")}
+          onPress={() => handleStatusToggle(user)}
           activeOpacity={0.7}
         >
           <Ionicons 
@@ -244,6 +393,118 @@ export default function ManageUserScreen() {
     </View>
   );
 
+  const renderEditModal = () => (
+    <Modal
+      visible={isEditModalVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setIsEditModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit User</Text>
+            <TouchableOpacity 
+              onPress={() => setIsEditModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={theme.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Name</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editForm.name}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, name: text }))}
+                placeholder="Enter name"
+                placeholderTextColor={theme.textLight}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editForm.email}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, email: text }))}
+                placeholder="Enter email"
+                placeholderTextColor={theme.textLight}
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Mobile Number</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editForm.mobile_number}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, mobile_number: text }))}
+                placeholder="Enter mobile number"
+                placeholderTextColor={theme.textLight}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Role</Text>
+              <TextInput
+                style={styles.textInput}
+                value={editForm.role}
+                onChangeText={(text) => setEditForm(prev => ({ ...prev, role: text }))}
+                placeholder="Enter role"
+                placeholderTextColor={theme.textLight}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Status</Text>
+              <View style={styles.statusToggleContainer}>
+                {["Active", "Inactive"].map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={[
+                      styles.statusToggleBtn,
+                      editForm.status === status && styles.activeStatusToggle
+                    ]}
+                    onPress={() => setEditForm(prev => ({ ...prev, status }))}
+                  >
+                    <Text style={[
+                      styles.statusToggleText,
+                      editForm.status === status && styles.activeStatusToggleText
+                    ]}>
+                      {status}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity 
+              style={styles.cancelBtn}
+              onPress={() => setIsEditModalVisible(false)}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.saveBtn}
+              onPress={handleEditUser}
+              disabled={manageLoading}
+            >
+              <Text style={styles.saveText}>
+                {manageLoading ? 'Saving...' : 'Save Changes'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -277,12 +538,9 @@ export default function ManageUserScreen() {
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Manage {role}s</Text>
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{count || filteredUsers.length}</Text>
-            </View>
           </View>
           <Text style={styles.subtitle}>
-            {filteredUsers.length === 1 ? '1 user' : `${filteredUsers.length} users`} 
+            {filteredUsers.length === 1 ? '1 Total user' : `${filteredUsers.length} Total users`} 
             {statusFilter !== "All" && ` • ${statusFilter} only`}
           </Text>
         </View>
@@ -342,6 +600,8 @@ export default function ManageUserScreen() {
           ]}
         />
       </View>
+
+      {renderEditModal()}
     </SafeAreaView>
   );
 }
@@ -350,6 +610,7 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.background,
+    paddingTop: 20
   },
   container: { 
     flex: 1, 
@@ -566,9 +827,9 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
   },
   
   additionalInfo: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    flexDirection:"row",
+  
+    gap: 12,
     marginBottom: 12,
   },
   infoBadge: {
@@ -579,6 +840,7 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   infoBadgeText: {
     fontSize: 13,
@@ -586,7 +848,66 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Date
+  subjectsContainer: {
+    gap: 6,
+  },
+  subjectsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  subjectsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  subjectsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  subjectBadge: {
+    backgroundColor: theme.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  subjectText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  
+  classesContainer: {
+    gap: 6,
+  },
+  classesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  classesLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  classesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  classBadge: {
+    backgroundColor: theme.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  classText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -598,7 +919,6 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontWeight: '500',
   },
   
-  // User Actions
   userActions: { 
     flexDirection: "row", 
     gap: 12 
@@ -642,12 +962,123 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontSize: 15 
   },
   
-  // Error State
-  errorContainer: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    padding: 20 
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: theme.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.text,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  formContainer: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: theme.text,
+    backgroundColor: theme.background,
+  },
+  statusToggleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statusToggleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    alignItems: 'center',
+    backgroundColor: theme.background,
+  },
+  activeStatusToggle: {
+    backgroundColor: theme.primary,
+    borderColor: theme.primary,
+  },
+  statusToggleText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.textSecondary,
+  },
+  activeStatusToggleText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    alignItems: 'center',
+    backgroundColor: theme.background,
+  },
+  cancelText: {
+    color: theme.textSecondary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  saveBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: theme.primary,
+    opacity: 1,
+  },
+  saveText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  // Error state styles
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   errorTitle: {
     fontSize: 20,
@@ -656,48 +1087,42 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  errorText: { 
-    fontSize: 16, 
-    color: theme.error, 
-    textAlign: "center", 
-    marginBottom: 20,
-    lineHeight: 22,
+  errorText: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
+    marginBottom: 24,
   },
   retryBtn: {
-    backgroundColor: theme.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    backgroundColor: theme.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
-  retryText: { 
-    color: "#FFFFFF", 
-    fontWeight: "600",
+  retryText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
     fontSize: 16,
   },
-  
-  emptyState: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
   },
-  emptyTitle: { 
-    fontSize: 22, 
-    fontWeight: "600", 
-    color: theme.text, 
-    marginTop: 20,
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.text,
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
-  emptySubtitle: { 
-    fontSize: 16, 
-    color: theme.textSecondary, 
-    textAlign: "center",
-    lineHeight: 22,
+  emptySubtitle: {
+    fontSize: 16,
+    color: theme.textSecondary,
+    textAlign: 'center',
     marginBottom: 24,
   },
   emptyActionBtn: {
@@ -707,7 +1132,7 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     backgroundColor: theme.surface,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.border,
   },
