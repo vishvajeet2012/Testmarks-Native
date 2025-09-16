@@ -145,10 +145,9 @@ export default function Adduserbyadmin() {
     }));
   }, [classes, formData, isStudent]);
 
-  // Filter assigned classes based on search query
   const filteredAssignedClasses = useMemo(() => {
     if (!classTeacherSearchQuery.trim()) return assignedClassesForTeacher;
-    
+  
     const searchTerm = classTeacherSearchQuery.toLowerCase();
     return assignedClassesForTeacher.filter(classItem => {
       const classMatch = classItem.class_name.toLowerCase().includes(searchTerm);
@@ -363,12 +362,13 @@ export default function Adduserbyadmin() {
   };
 
   const handleSubmit = () => {
-    console.log('Form submitted:', formData);
-    postData(formData);
-    Alert.alert('Success', 'User information saved successfully');
-  };
+    postData(formData)
+  if(error){
+    Alert.alert(`${error }`);}else{
+      Alert.alert(`${data?.message || "userAdded Successfully"}`)
 
-  // Get class name by ID
+    }
+  };
   const getClassNameById = (classId: number) => {
     const foundClass = classes.find(cls => cls.class_id === classId);
     return foundClass ? foundClass.class_name : `Class ${classId}`;
@@ -659,7 +659,7 @@ export default function Adduserbyadmin() {
                   <View key={index} style={styles.subjectChip}>
                     <Text style={styles.subjectChipText}>{subject}</Text>
                     <TouchableOpacity onPress={() => removeSubject(subject)}>
-                      <Text style={styles.removeChipText}>✕</Text>
+                      <Text style={styles.removeChipText}>âœ•</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -695,7 +695,7 @@ export default function Adduserbyadmin() {
                       {getClassNameById(assignment.class_id)} - {getSectionNameById(assignment.class_id, assignment.section_id)}
                     </Text>
                     <TouchableOpacity onPress={() => removeClassAssignment(assignment)}>
-                      <Text style={styles.removeChipText}>✕</Text>
+                      <Text style={styles.removeChipText}>âœ•</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -736,7 +736,7 @@ export default function Adduserbyadmin() {
                       {getClassNameById(assignment.class_id)} - {assignment.subject_name}
                     </Text>
                     <TouchableOpacity onPress={() => removeSubjectAssignment(assignment)}>
-                      <Text style={styles.removeChipText}>✕</Text>
+                      <Text style={styles.removeChipText}>âœ•</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -825,7 +825,7 @@ export default function Adduserbyadmin() {
               Select Class {!isStudent && '& Section for Assignment'}
             </Text>
             <TouchableOpacity onPress={handleClearSearch}>
-              <Text style={styles.closeButton}>✕</Text>
+              <Text style={styles.closeButton}>âœ•</Text>
             </TouchableOpacity>
           </View>
 
@@ -893,7 +893,7 @@ export default function Adduserbyadmin() {
               Select Class Teacher Section
             </Text>
             <TouchableOpacity onPress={handleClearClassTeacherSearch}>
-              <Text style={styles.closeButton}>✕</Text>
+              <Text style={styles.closeButton}>âœ•</Text>
             </TouchableOpacity>
           </View>
 

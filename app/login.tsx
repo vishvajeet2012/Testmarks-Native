@@ -95,7 +95,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (token && user) {
-      try {
+        try {
         if (hasRole(user) && user.role === 'Admin') {
           router.replace('/adminHomeScreen');
         } else if (hasRole(user) && user.role === 'Student') {

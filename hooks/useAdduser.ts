@@ -27,7 +27,7 @@ export const useAddUserByAdmin = <T = any>(): ApiResponse<T> => {
         payload,
         {
           headers: {
-            Authorization: token ? `Bearer ${token}` : "",
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }
@@ -37,7 +37,7 @@ export const useAddUserByAdmin = <T = any>(): ApiResponse<T> => {
     } catch (err) {
       const axiosError = err as AxiosError;
       setError(
-        (axiosError.response?.data as string) || axiosError.message
+        axiosError.message
       );
     } finally {
       setLoading(false);

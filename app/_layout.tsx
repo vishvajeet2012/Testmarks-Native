@@ -91,8 +91,12 @@ function RootLayoutContent() {
         <Stack.Screen name="studentHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="teacherHomeScreen" options={{ headerShown: false }} />
         <Stack.Screen name="manageUser" options={{headerShown:false}}/>
+        <Stack.Screen name="classmanagement" options={{headerShown:false}} />
         <Stack.Screen name="forgetPassowrd" options={{headerShown:false}} />
+        
+        <Stack.Screen name= "sectionmanagement" options={{headerShown:false}}/>
         <Stack.Screen 
+
           name="adminHomeScreen" 
           initialParams={user } 
           options={{ headerShown: false }}

@@ -54,8 +54,7 @@ export const manageStudentUser = createAsyncThunk<
 const response = await axios.post(
   `${USER_URL}/manageuser`,
   userData,
-  {
-    headers: {
+  {headers: {
       Authorization: `Bearer ${savedToken}`,
       "Content-Type": "application/json",
     },

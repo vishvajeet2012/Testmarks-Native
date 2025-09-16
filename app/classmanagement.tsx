@@ -5,19 +5,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
+
+interface SectionTeacher {
+  teacher_id: number;
+  name: string;
+  email: string;
+}
+
+interface ClassTeacher {
+  teacher_id: number;
+  name: string;
+  email: string;
+  assigned_subjects: string[];
+  class_assignments: Array<{ class_id: number; section_id: number }>;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SectionData {
+  section_id: number;
+  section_name: string;
+  total_students: number;
+  class_teacher_id: number | null;
+  section_created_at: string;
+  section_updated_at: string;
+  class_teacher: ClassTeacher | null;
+  section_teachers: SectionTeacher[];
+}
 
 interface ClassData {
   class_id: number;
@@ -25,23 +52,7 @@ interface ClassData {
   description: string;
   class_created_at: string;
   class_updated_at: string;
-  sections: Array<{
-    section_id: number;
-    section_name: string;
-    total_students: number;
-    class_teacher_id: number | null;
-    section_created_at: string;
-    section_updated_at: string;
-  }>;
-  class_teacher: {
-    teacher_id: number | null;
-    name: string | null;
-    email: string | null;
-    assigned_subjects: string[] | null;
-    class_assignments: string[] | null;
-    created_at: string | null;
-    updated_at: string | null;
-  };
+  sections: SectionData[];
 }
 
 const lightTheme = {
@@ -91,8 +102,7 @@ export default function ClassManagement() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
   const dispatch = useAppDispatch();
-  
-  const { classes, loading, error } = useAppSelector((state) => state.classesGetAll);
+    const { classes, loading, error } = useAppSelector((state) => state.classesGetAll);
   
   const [statusFilter, setStatusFilter] = useState<"All" | "With Teacher" | "Without Teacher">("All");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -101,6 +111,8 @@ export default function ClassManagement() {
     class_name: '',
     description: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const styles = createStyles(theme);
 
@@ -120,11 +132,45 @@ export default function ClassManagement() {
     dispatch(fetchAllClasses());
   };
 
-  const filteredClasses = (classes || []).filter((classItem: ClassData) => {
-    if (statusFilter === "All") return true;
-    if (statusFilter === "With Teacher") return classItem.class_teacher.teacher_id !== null;
-    if (statusFilter === "Without Teacher") return classItem.class_teacher.teacher_id === null;
-    return true;
+  const filteredClasses = (classes || []).filter((classItem: any) => {
+    if (statusFilter !== "All") {
+      const hasClassTeacher = classItem.sections.some((section:any) => 
+        section.class_teacher_id !== null || 
+        (section.class_teacher && section.class_teacher.teacher_id !== null)
+      );
+      
+      if (statusFilter === "With Teacher" && !hasClassTeacher) return false;
+      if (statusFilter === "Without Teacher" && hasClassTeacher) return false;
+    }
+    
+    if (searchQuery.trim() === '') return true;
+    
+    const query = searchQuery.toLowerCase();
+    
+    if (classItem.class_name.toLowerCase().includes(query) || 
+        classItem.description.toLowerCase().includes(query)) {
+      return true;
+    }
+    
+    const hasMatchingSection = classItem.sections.some((section:any) => {
+      if (section.section_name.toLowerCase().includes(query)) return true;
+      
+      if (section.class_teacher && 
+          (section.class_teacher.name.toLowerCase().includes(query) ||
+           section.class_teacher.email.toLowerCase().includes(query))) {
+        return true;
+      }
+      
+      if (section.section_teachers.some((teacher:any) => 
+          teacher.name.toLowerCase().includes(query) ||
+          teacher.email.toLowerCase().includes(query))) {
+        return true;
+      }
+      
+      return false;
+    });
+    
+    return hasMatchingSection;
   });
 
   const handleAddClass = () => {
@@ -143,7 +189,6 @@ export default function ClassManagement() {
   const handleEditClass = () => {
     if (!selectedClass) return;
     
-    console.log('Editing class:', selectedClass.class_id, editForm);
     setIsEditModalVisible(false);
     setSelectedClass(null);
   };
@@ -166,131 +211,182 @@ export default function ClassManagement() {
     );
   };
 
-  const renderClassItem = ({ item: classItem }: { item: ClassData }) => (
-    <View style={styles.classCard}>
-      <View style={styles.classInfo}>
-        <View style={styles.classHeader}>
-          <View style={styles.classNameContainer}>
-            <Text style={styles.className}>{classItem.class_name}</Text>
-            <Text style={styles.classDescription}>{classItem.description}</Text>
-          </View>
-          <View style={styles.classStats}>
-            <View style={styles.statBadge}>
-              <Ionicons name="people-outline" size={14} color={theme.primary} />
-              <Text style={styles.statText}>
-                {classItem.sections.reduce((total, section) => total + section.total_students, 0)} Students
-              </Text>
-            </View>
-            <View style={styles.statBadge}>
-              <Ionicons name="library-outline" size={14} color={theme.secondary} />
-              <Text style={styles.statText}>
-                {classItem.sections.length} Section{classItem.sections.length !== 1 ? 's' : ''}
-              </Text>
-            </View>
-          </View>
-        </View>
+  const handleManageSections = (section: SectionData) => {
+    router.push({
+      pathname: '/sectionmanagement',
+      params: { 
+    
+      sectionId: section?.section_id,
+      sectionName: section?.section_name          
+    }
+    });
+  };
 
-        {classItem.class_teacher.teacher_id ? (
-          <View style={styles.teacherInfo}>
-            <View style={styles.teacherHeader}>
-              <Ionicons name="person-circle-outline" size={16} color={theme.success} />
-              <Text style={styles.teacherLabel}>Class Teacher</Text>
+  const renderClassItem = ({ item: classItem }: { item: ClassData }) => {
+    const totalStudents = classItem.sections.reduce((total, section) => total + section.total_students, 0);
+    
+    const hasClassTeacher = classItem.sections.some(section => 
+      section.class_teacher_id !== null || 
+      (section.class_teacher && section.class_teacher.teacher_id !== null)
+    );
+    
+    const classTeacherSection = classItem.sections.find(section => 
+      section.class_teacher_id !== null || 
+      (section.class_teacher && section.class_teacher.teacher_id !== null)
+    );
+    
+    const classTeacher = classTeacherSection ? 
+      (classTeacherSection.class_teacher || { 
+        teacher_id: classTeacherSection.class_teacher_id,
+        name: "Unknown Teacher",
+        email: "",
+        assigned_subjects: []
+      }) : null;
+
+    return (
+      <View style={styles.classCard}>
+        <View style={styles.classInfo}>
+          <View style={styles.classHeader}>
+            <View style={styles.classNameContainer}>
+              <Text style={styles.className}>{classItem.class_name}</Text>
+              <Text style={styles.classDescription}>{classItem.description}</Text>
             </View>
-            <Text style={styles.teacherName}>{classItem.class_teacher.name}</Text>
-            <Text style={styles.teacherEmail}>{classItem.class_teacher.email}</Text>
-            {classItem.class_teacher.assigned_subjects && (
-              <View style={styles.subjectsContainer}>
-                <Text style={styles.subjectsLabel}>Subjects:</Text>
-                <View style={styles.subjectsList}>
-                  {classItem.class_teacher.assigned_subjects.map((subject, index) => (
-                    <View key={index} style={styles.subjectBadge}>
-                      <Text style={styles.subjectText}>{subject}</Text>
-                    </View>
-                  ))}
-                </View>
+            <View style={styles.classStats}>
+              <View style={styles.statBadge}>
+                <Ionicons name="people-outline" size={14} color={theme.primary} />
+                <Text style={styles.statText}>
+                  {totalStudents} Students
+                </Text>
               </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.noTeacherInfo}>
-            <Ionicons name="person-add-outline" size={16} color={theme.error} />
-            <Text style={styles.noTeacherText}>No class teacher assigned</Text>
-          </View>
-        )}
-
-        {/* Sections */}
-        {classItem.sections.length > 0 && (
-          <View style={styles.sectionsContainer}>
-            <View style={styles.sectionsHeader}>
-              <Ionicons name="grid-outline" size={16} color={theme.text} />
-              <Text style={styles.sectionsTitle}>Sections</Text>
+              <View style={styles.statBadge}>
+                <Ionicons name="library-outline" size={14} color={theme.secondary} />
+                <Text style={styles.statText}>
+                  {classItem.sections.length} Section{classItem.sections.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
             </View>
-            <View style={styles.sectionsList}>
-              {classItem.sections.map((section) => (
-                <View key={section.section_id} style={styles.sectionItem}>
-                  <Text style={styles.sectionName}>{section.section_name}</Text>
-                  <Text style={styles.sectionStudents}>
-                    {section.total_students} student{section.total_students !== 1 ? 's' : ''}
-                  </Text>
+          </View>
+
+          {hasClassTeacher && classTeacher ? (
+            <View style={styles.teacherInfo}>
+              <View style={styles.teacherHeader}>
+                <Ionicons name="person-circle-outline" size={16} color={theme.success} />
+                <Text style={styles.teacherLabel}>Class Teacher</Text>
+              </View>
+              <Text style={styles.teacherName}>{classTeacher.name}</Text>
+              <Text style={styles.teacherEmail}>{classTeacher.email}</Text>
+              {classTeacher.assigned_subjects && classTeacher.assigned_subjects.length > 0 && (
+                <View style={styles.subjectsContainer}>
+                  <Text style={styles.subjectsLabel}>Subjects:</Text>
+                  <View style={styles.subjectsList}>
+                    {classTeacher.assigned_subjects.map((subject: string, index: number) => (
+                      <View key={index} style={styles.subjectBadge}>
+                        <Text style={styles.subjectText}>{subject}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              ))}
+              )}
             </View>
-          </View>
-        )}
+          ) : (
+            <View style={styles.noTeacherInfo}>
+              <Ionicons name="person-add-outline" size={16} color={theme.error} />
+              <Text style={styles.noTeacherText}>No class teacher assigned</Text>
+            </View>
+          )}
 
-        <View style={styles.dateContainer}>
-          <Ionicons name="calendar-outline" size={12} color={theme.textLight} />
-          <Text style={styles.classDate}>
-            Created: {new Date(classItem.class_created_at).toLocaleDateString()}
-          </Text>
+          {classItem.sections.length > 0 && (
+            <View style={styles.sectionsContainer}>
+              <View style={styles.sectionsHeader}>
+                <Ionicons name="grid-outline" size={16} color={theme.text} />
+                <Text style={styles.sectionsTitle}>Sections</Text>
+              </View>
+
+              
+              <View style={styles.sectionsList}>
+                {classItem.sections.map((section) => (
+                  <TouchableOpacity     onPress={() => handleManageSections( section)}
+ key={section.section_id} style={styles.sectionItem}>
+                    <Text style={styles.sectionName}>{section.section_name}</Text>
+                    <View style={styles.sectionDetails}>
+                      <Text style={styles.sectionStudents}>
+                        {section.total_students} student{section.total_students !== 1 ? 's' : ''}
+                      </Text>
+                      <Text style={styles.sectionTeachers}>
+                        {section.section_teachers.length} teacher{section.section_teachers.length !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    {(section.class_teacher_id || section.class_teacher) && (
+                      <View style={styles.sectionTeacherBadge}>
+                        <Ionicons name="person-outline" size={12} color={theme.success} />
+                        <Text style={styles.sectionTeacherText}>Has class teacher</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.dateContainer}>
+            <Ionicons name="calendar-outline" size={12} color={theme.textLight} />
+            <Text style={styles.classDate}>
+              Created: {new Date(classItem.class_created_at).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.classActions}>
+          <TouchableOpacity 
+            style={styles.editBtn}
+            onPress={() => openEditModal(classItem)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil-outline" size={16} color={theme.primary} />
+            <Text style={styles.editText}>Edit</Text>
+          </TouchableOpacity>
+          
+          
+
+          <TouchableOpacity 
+            style={styles.deleteBtn}
+            onPress={() => handleDeleteClass(classItem)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={16} color={theme.errorText} />
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.classActions}>
-        <TouchableOpacity 
-          style={styles.editBtn}
-          onPress={() => openEditModal(classItem)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="pencil-outline" size={16} color={theme.primary} />
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.manageBtn}
-        //  onPress={() => router.push(`/class/${classItem.class_id}/sections`)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="settings-outline" size={16} color={theme.secondary} />
-          <Text style={styles.manageText}>Manage</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.deleteBtn}
-          onPress={() => handleDeleteClass(classItem)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={16} color={theme.errorText} />
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="school-outline" size={64} color={theme.textLight} />
       <Text style={styles.emptyTitle}>No classes found</Text>
       <Text style={styles.emptySubtitle}>
-        {statusFilter !== "All" 
-          ? `No classes ${statusFilter === "With Teacher" ? "with teachers" : "without teachers"} to display`
-          : "No classes have been created yet"
+        {searchQuery.trim() !== '' 
+          ? `No classes match your search for "${searchQuery}"`
+          : statusFilter !== "All" 
+            ? `No classes ${statusFilter === "With Teacher" ? "with teachers" : "without teachers"} to display`
+            : "No classes have been created yet"
         }
       </Text>
-      <TouchableOpacity style={styles.emptyActionBtn} onPress={handleAddClass}>
-        <Ionicons name="add-circle-outline" size={20} color={theme.primary} />
-        <Text style={styles.emptyActionText}>Create First Class</Text>
-      </TouchableOpacity>
+      {searchQuery.trim() !== '' ? (
+        <TouchableOpacity 
+          style={styles.emptyActionBtn} 
+          onPress={() => setSearchQuery('')}
+        >
+          <Ionicons name="search-outline" size={20} color={theme.primary} />
+          <Text style={styles.emptyActionText}>Clear Search</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.emptyActionBtn} onPress={handleAddClass}>
+          <Ionicons name="add-circle-outline" size={20} color={theme.primary} />
+          <Text style={styles.emptyActionText}>Create First Class</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -391,6 +487,12 @@ export default function ClassManagement() {
       />
       <View style={styles.container}>
         <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </TouchableOpacity>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>Class Management</Text>
           </View>
@@ -398,6 +500,37 @@ export default function ClassManagement() {
             {filteredClasses.length === 1 ? '1 Total class' : `${filteredClasses.length} Total classes`}
             {statusFilter !== "All" && ` • ${statusFilter}`}
           </Text>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <View style={[
+            styles.searchInputContainer,
+            isSearchFocused && styles.searchInputContainerFocused
+          ]}>
+            <Ionicons 
+              name="search" 
+              size={20} 
+              color={isSearchFocused ? theme.primary : theme.textLight} 
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search classes, sections, or teachers..."
+              placeholderTextColor={theme.textLight}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                style={styles.clearSearchButton}
+              >
+                <Ionicons name="close-circle" size={20} color={theme.textLight} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={styles.actions}>
@@ -408,14 +541,6 @@ export default function ClassManagement() {
           >
             <Ionicons name="add" size={20} color="#FFFFFF" />
             <Text style={styles.primaryText}>Add Class</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.secondaryBtn}
-            onPress={loadClasses}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="refresh-outline" size={20} color={theme.textSecondary} />
-            <Text style={styles.secondaryText}>Refresh</Text>
           </TouchableOpacity>
         </View>
 
@@ -463,6 +588,8 @@ export default function ClassManagement() {
   );
 }
 
+
+
 const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -486,10 +613,17 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
   },
   
   header: { 
-    marginBottom: 20 
+    marginBottom: 16,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 10,
+    padding: 4,
   },
   titleContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
   },
@@ -497,18 +631,48 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontSize: 28, 
     fontWeight: "700", 
     color: theme.text,
-    flex: 1,
+    marginTop: 8,
   },
   subtitle: { 
     fontSize: 16, 
     color: theme.textSecondary,
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 50,
+  },
+  searchInputContainerFocused: {
+    borderColor: theme.primary,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: theme.text,
+    height: '100%',
+  },
+  clearSearchButton: {
+    padding: 4,
   },
   
   actions: { 
     flexDirection: "row", 
     gap: 12, 
-    marginBottom: 20 
+    marginBottom: 16 
   },
   primaryBtn: {
     flex: 1,
@@ -531,27 +695,9 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
-  secondaryBtn: {
-    flex: 1,
-    backgroundColor: theme.surface,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: 'row',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-  },
-  secondaryText: { 
-    color: theme.textSecondary, 
-    fontWeight: "600",
-    fontSize: 16,
-  },
   
   filterContainer: { 
-    marginBottom: 20 
+    marginBottom: 16 
   },
   filterLabel: { 
     fontSize: 16, 
@@ -742,16 +888,37 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.border,
+    minWidth: 120,
+    position: 'relative',
   },
   sectionName: {
     fontSize: 14,
     fontWeight: '600',
     color: theme.text,
+    marginBottom: 4,
+  },
+  sectionDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   sectionStudents: {
     fontSize: 12,
     color: theme.textSecondary,
-    marginTop: 2,
+  },
+  sectionTeachers: {
+    fontSize: 12,
+    color: theme.secondary,
+    fontWeight: '500',
+  },
+  sectionTeacherBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  sectionTeacherText: {
+    fontSize: 10,
+    color: theme.successText,
   },
   
   dateContainer: {
@@ -822,7 +989,6 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     fontSize: 14 
   },
   
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
