@@ -3,8 +3,13 @@ import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
 import createClassReducer from "./slice/createClass";
 import classesgetallReducer from './slice/getAllClassbysection';
-import { manageUserReducer } from './slice/manageuserSlice'; // Adjust path as needed
+import { manageUserReducer } from './slice/manageuserSlice';
 import userReducer from './slice/userSlice';
+
+import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
+
+
+
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -13,6 +18,7 @@ export const store = configureStore({
     class: classReducer,
     classesGetAll: classesgetallReducer,
     createClass: createClassReducer,
+    section: sectionReducer,//// get all seciton addmin ka hai 
 
 
   },

@@ -1,10 +1,11 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface SectionHeaderProps {
   sectionName?: string;
   studentsCount: number;
   teachersCount: number;
+  className?: any;
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -14,19 +15,18 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 }) => {
   return (
     <View style={styles.headerContainer}>
-      <Text style={styles.sectionTitle}>
-        {sectionName || 'Section Name'}
-      </Text>
+      {/* Title */}
+      <Text style={styles.sectionTitle}>{sectionName || "Section Name"}</Text>
+      <View style={styles.titleUnderline} />
 
+      {/* Stats */}
       <View style={styles.statsContainer}>
-        <View style={styles.statBox}>
+        <View style={styles.statCard}>
           <Text style={styles.statNumber}>{studentsCount}</Text>
           <Text style={styles.statLabel}>Students</Text>
         </View>
 
-        <View style={styles.statDivider} />
-
-        <View style={styles.statBox}>
+        <View style={styles.statCard}>
           <Text style={styles.statNumber}>{teachersCount}</Text>
           <Text style={styles.statLabel}>Teachers</Text>
         </View>
@@ -37,51 +37,47 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+  
   },
   sectionTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 20,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#222",
+  },
+  titleUnderline: {
+    height: 3,
+    width: 40,
+    backgroundColor: "#e11b23",
+    borderRadius: 2,
+    marginTop: 6,
+    marginBottom: 16,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  statBox: {
-    alignItems: 'center',
+  statCard: {
     flex: 1,
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 20,
+    backgroundColor: "#fafafa",
+    paddingVertical: 16,
+    marginHorizontal: 6,
+    borderRadius: 12,
+    alignItems: "center",
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#e11b23',
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#e11b23",
   },
   statLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: "#666",
     marginTop: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
   },
 });

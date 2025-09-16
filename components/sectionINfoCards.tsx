@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 interface InfoCardProps {
   label: string;
@@ -11,49 +10,66 @@ interface InfoCardProps {
 export const InfoCard: React.FC<InfoCardProps> = ({ label, value, icon }) => {
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        {icon && <Text style={styles.icon}>{icon}</Text>}
+      {icon && <Text style={styles.icon}>{icon}</Text>}
+      <View style={styles.textWrapper}>
         <Text style={styles.label}>{label}</Text>
+        <Text style={styles.value}>{value}</Text>
       </View>
-      <Text style={styles.value}>{value}</Text>
+    </View>
+  );
+};
+
+export const InfoCardRow: React.FC<{
+  data: Array<{ label: string; value: string | number; icon?: string }>;
+}> = ({ data }) => {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 400;
+
+  return (
+    <View
+      style={[
+        styles.row,
+        { flexDirection: isSmallScreen ? "column" : "row" },
+      ]}
+    >
+      {data.map((item, index) => (
+        <InfoCard key={index} {...item} />
+      ))}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#e11b23',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
+  row: {
+    justifyContent: "space-between",
+    marginVertical: 10,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  card: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 14,
+    margin: 6,
+    borderRadius: 16,
+    elevation: 4,
   },
   icon: {
-    fontSize: 18,
-    marginRight: 8,
+    fontSize: 28,
+    marginRight: 12,
+  },
+  textWrapper: {
+    flex: 1,
   },
   label: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    fontSize: 12,
+    color: "#888",
+    fontWeight: "500",
   },
   value: {
     fontSize: 18,
-    color: '#333',
-    fontWeight: '600',
+    fontWeight: "700",
+    color: "#222",
+    marginTop: 2,
   },
 });

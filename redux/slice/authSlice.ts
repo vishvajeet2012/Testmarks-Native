@@ -64,7 +64,7 @@ export const loadToken = createAsyncThunk<
     const savedToken = await AsyncStorage.getItem("token");
    console.log(savedToken ," toekn check")
     if (!savedToken) return null;
-    const res = await axios.get<{ user: User }>(`https://serversql-6vbfv.vercel.app/api/auth/me`, {
+    const res = await axios.get<{ user: User }>(`https://serversql-brown.vercel.app/api/auth/me`, {
       headers: {
         Authorization: `Bearer ${savedToken}`,
         "Content-Type": "application/json",
