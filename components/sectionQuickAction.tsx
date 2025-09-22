@@ -25,6 +25,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
           onPress={onViewStudents}
           style={styles.halfButton}
         />
+        
         <ActionButton
           title="View Teachers"
           onPress={onViewTeachers}

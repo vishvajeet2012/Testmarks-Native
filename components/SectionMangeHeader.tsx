@@ -1,11 +1,13 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+// A smaller placeholder for an icon
+const IconPlaceholder = () => <View style={styles.iconShape} />;
+
 interface SectionHeaderProps {
   sectionName?: string;
   studentsCount: number;
   teachersCount: number;
-  className?: any;
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
@@ -14,21 +16,38 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   teachersCount,
 }) => {
   return (
-    <View style={styles.headerContainer}>
-      {/* Title */}
-      <Text style={styles.sectionTitle}>{sectionName || "Section Name"}</Text>
-      <View style={styles.titleUnderline} />
+    <View style={styles.container}>
+      <View style={styles.card}>
+        {/* Header Title */}
+        <Text style={styles.sectionTitle}>{sectionName || "Class Overview"}</Text>
+        <View style={styles.titleDivider} />
 
-      {/* Stats */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{studentsCount}</Text>
-          <Text style={styles.statLabel}>Students</Text>
-        </View>
+        {/* Stats Container */}
+        <View style={styles.statsContainer}>
+          {/* Students Stat */}
+          <View style={styles.statItem}>
+            <View style={styles.iconContainer}>
+              <IconPlaceholder />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statNumber}>{studentsCount}</Text>
+              <Text style={styles.statLabel}>Students</Text>
+            </View>
+          </View>
 
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{teachersCount}</Text>
-          <Text style={styles.statLabel}>Teachers</Text>
+          {/* Vertical Divider */}
+          <View style={styles.verticalDivider} />
+
+          {/* Teachers Stat */}
+          <View style={styles.statItem}>
+            <View style={styles.iconContainer}>
+              <IconPlaceholder />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={styles.statNumber}>{teachersCount}</Text>
+              <Text style={styles.statLabel}>Teachers</Text>
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -36,48 +55,78 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    backgroundColor: "#fff",
+  container: {
     padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
-  
+    backgroundColor: '#F0F0F3',
+  },
+  card: {
+    backgroundColor: '#F0F0F3',
+    borderRadius: 20,
+    padding: 18, // Reduced padding
+    shadowColor: '#a9a9b1',
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#222",
+    fontSize: 20, // Slightly smaller
+    fontWeight: '700',
+    color: '#444',
+    textAlign: 'center',
   },
-  titleUnderline: {
-    height: 3,
-    width: 40,
-    backgroundColor: "#e11b23",
-    borderRadius: 2,
-    marginTop: 6,
-    marginBottom: 16,
+  titleDivider: {
+    height: 1,
+    backgroundColor: '#e0e0e3',
+    marginVertical: 15, // Reduced margin
+    marginHorizontal: 10,
   },
   statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
-  statCard: {
+  statItem: {
     flex: 1,
-    backgroundColor: "#fafafa",
-    paddingVertical: 16,
-    marginHorizontal: 6,
-    borderRadius: 12,
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    width: 40, // Smaller
+    height: 40, // Smaller
+    borderRadius: 12, // Adjusted radius
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F3',
+    marginRight: 12, // Reduced margin
+    shadowColor: '#ffffff',
+    shadowOffset: { width: -4, height: -4 },
+    shadowOpacity: 1,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  iconShape: {
+    width: 18, // Smaller
+    height: 18, // Smaller
+    borderRadius: 4, // Adjusted radius
+    backgroundColor: '#e11b23',
+  },
+  statTextContainer: {
+    alignItems: 'flex-start',
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#e11b23",
+    fontSize: 24, // Smaller
+    fontWeight: 'bold',
+    color: '#e11b23',
   },
   statLabel: {
-    fontSize: 13,
-    color: "#666",
-    marginTop: 4,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    fontSize: 12, // Smaller
+    color: '#888',
+    marginTop: 2,
+  },
+  verticalDivider: {
+    width: 1,
+    height: '50%', // Adjusted height
+    backgroundColor: '#d1d1d6',
   },
 });
