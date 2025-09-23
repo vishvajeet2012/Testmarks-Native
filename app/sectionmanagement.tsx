@@ -1,9 +1,11 @@
 import LoadingScreen from '@/components/Loading';
 import { InfoCard } from '@/components/sectionINfoCards';
 import { SectionHeader } from '@/components/SectionMangeHeader';
+import SectionTeacherView from '@/components/SectionsTeacher';
 import SectionStudentView from '@/components/sectionStudentViewList';
-import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
+import { useAppSelector } from '@/hooks/reduxhooks';
 import { resetSectionState } from '@/redux/slice/sectionSlice/getSectionSlice';
+import { AppDispatch } from '@/redux/store';
 import { fetchSectionDetails } from '@/thunk/section/getsectionDetails';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -14,7 +16,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
- 
+import { useDispatch } from 'react-redux';
+
 type Params = {
   classId?: string;
   className?: string;
@@ -26,8 +29,8 @@ type ActiveView = 'info' | 'students' | 'teachers' | 'settings';
 
 export default function SectionManagement() {
   const { sectionId, sectionName } = useLocalSearchParams<Params>();
-  const dispatch = useAppDispatch();
-  const { loading, error, data, message } = useAppSelector((s) => s.section);
+  const dispatch =useDispatch<AppDispatch>();
+  const { loading, error, data } = useAppSelector((s) => s.section);
   const [activeView, setActiveView] = useState<ActiveView>('info');
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export default function SectionManagement() {
   }, [dispatch, sectionId]);
 
   if (loading) {
-    return <LoadingScreen/>;
+    return <LoadingScreen />;
   }
 
   if (error) {
@@ -61,16 +64,19 @@ export default function SectionManagement() {
 
   const handleViewTeachers = () => {
     setActiveView('teachers');
-    Alert.alert('View Teachers', 'Navigate to teachers list');
   };
 
   const handleAddStudent = () => {
     Alert.alert('Add Student', 'Navigate to add student form');
   };
 
+  const handleAddTeacher = () => {
+    Alert.alert('Add Teacher', 'Navigate to add teacher form');
+  };
+
   const handleManageSection = () => {
     setActiveView('settings');
-    Alert.alert('Manage Section', 'Navigate to section settings');
+    // Removed the alert to allow the view to switch first
   };
 
   const handleShowInfo = () => {
@@ -82,11 +88,7 @@ export default function SectionManagement() {
       case 'students':
         return <SectionStudentView dataStudent={data?.students || { students: [] }} />;
       case 'teachers':
-        return (
-          <View style={styles.contentContainer}>
-            <Text style={styles.contentText}>Teachers View - Coming Soon</Text>
-          </View>
-        );
+        return <SectionTeacherView section_teachers={data?.section_teachers || []} />;
       case 'settings':
         return (
           <View style={styles.contentContainer}>
@@ -97,23 +99,41 @@ export default function SectionManagement() {
       default:
         return (
           <View style={styles.headerContent}>
-          <InfoCard label="Section ID" value={String(sectionId) || 'N/A'} icon="🆔" />
- <InfoCard label="Section Name" value={sectionName || 'N/A'} icon="📚" />
+            <InfoCard label="Section ID" value={String(sectionId) || 'N/A'} icon="🆔" />
+            <InfoCard label="Section Name" value={sectionName || 'N/A'} icon="📚" />
           </View>
         );
     }
   };
 
+  const renderFloatingButton = () => {
+    if (activeView === 'students') {
+      return (
+        <TouchableOpacity style={styles.addButton} onPress={handleAddStudent}>
+          <Text style={styles.addButtonText}>+ Add Student</Text>
+        </TouchableOpacity>
+      );
+    }
+    if (activeView === 'teachers') {
+      return (
+        <TouchableOpacity style={styles.addButton} onPress={handleAddTeacher}>
+          <Text style={styles.addButtonText}>+ Add Teacher</Text>
+        </TouchableOpacity>
+      );
+    }
+    return null; // Return null for 'info' and 'settings' views
+  };
+
   return (
     <View style={styles.container}>
-      <SectionHeader 
+      <SectionHeader
         sectionName={data?.section?.class_details?.class_name || sectionName}
         studentsCount={studentsCount}
         teachersCount={teachersCount}
       />
-      
+
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.navButton, activeView === 'info' && styles.activeButton]}
           onPress={handleShowInfo}
         >
@@ -122,7 +142,7 @@ export default function SectionManagement() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.navButton, activeView === 'students' && styles.activeButton]}
           onPress={handleViewStudents}
         >
@@ -131,7 +151,7 @@ export default function SectionManagement() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.navButton, activeView === 'teachers' && styles.activeButton]}
           onPress={handleViewTeachers}
         >
@@ -140,7 +160,7 @@ export default function SectionManagement() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.navButton, activeView === 'settings' && styles.activeButton]}
           onPress={handleManageSection}
         >
@@ -154,14 +174,11 @@ export default function SectionManagement() {
         {renderContent()}
       </View>
 
-      {activeView !== 'students' && (
-        <TouchableOpacity style={styles.addButton} onPress={handleAddStudent}>
-          <Text style={styles.addButtonText}>+ Add Student</Text>
-        </TouchableOpacity>
-      )}
+      {renderFloatingButton()}
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

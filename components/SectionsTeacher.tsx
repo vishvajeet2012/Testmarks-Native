@@ -1,46 +1,41 @@
 import React from 'react';
 import {
-  Dimensions,
-  FlatList,
-  Image,
-  ListRenderItem,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Dimensions,
+    FlatList,
+    Image,
+    ListRenderItem,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
-MaterialIcons.loadFont();
+// 2. Updated the font loading call
+Ionicons.loadFont();
 
 const { width } = Dimensions.get('window');
 
-interface Student {
-  student_id: number;
+interface Teacher {
+  teacher_id: number;
   name: string;
   email: string;
-  mobile_number: string;
-  profile_picture: string;
-  roll_number: string;
-  dob: string;
-  guardian_name: string;
-  guardian_mobile_number: string;
-  student_mobile_number: string;
+  mobile_number: string | null;
+  profile_picture: string | null;
+  assigned_subjects: string | null;
+  class_assignments: string | null;
   status: string;
   created_at: string;
   updated_at: string;
 }
 
-interface DataStudent {
-  students: Student[];
+interface SectionTeacherViewProps {
+  section_teachers: Teacher[];
 }
 
-interface SectionStudentViewProps {
-  dataStudent: DataStudent;
-}
-
-export default function SectionStudentView({ dataStudent }: SectionStudentViewProps): React.JSX.Element {
-    const formatDate = (dateString: string): string => {
+export default function SectionTeacherView({ section_teachers }: SectionTeacherViewProps): React.JSX.Element {
+  
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -49,10 +44,8 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
     });
   };
 
-  console.log(dataStudent);
-
-  const renderStudentCard: ListRenderItem<Student> = ({ item }) => (
-    <TouchableOpacity style={styles.studentCard} activeOpacity={0.8}>
+  const renderTeacherCard: ListRenderItem<Teacher> = ({ item }) => (
+    <TouchableOpacity style={styles.teacherCard} activeOpacity={0.8}>
       <View style={styles.cardHeader}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
@@ -70,8 +63,8 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
             )}
           </View>
           <View style={styles.nameSection}>
-            <Text style={styles.studentName}>{item.name}</Text>
-            <Text style={styles.rollNumber}>Roll: {item.roll_number}</Text>
+            <Text style={styles.teacherName}>{item.name}</Text>
+            <Text style={styles.teacherEmail}>{item.email}</Text>
           </View>
         </View>
         <View style={styles.statusContainer}>
@@ -85,27 +78,17 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
       </View>
 
       <View style={styles.cardBody}>
+        {/* 3. Replaced MaterialIcons with Ionicons and updated icon names */}
         <View style={styles.infoRow}>
-          <MaterialIcons name="email" size={16} color="#e11b23" />
-          <Text style={styles.infoText}>{item.email}</Text>
+          <Ionicons name="call-outline" size={16} color="#e11b23" />
+          <Text style={styles.infoText}>{item.mobile_number || 'N/A'}</Text>
         </View>
         
         <View style={styles.infoRow}>
-          <MaterialIcons name="phone" size={16} color="#e11b23" />
-          <Text style={styles.infoText}>{item.mobile_number}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <MaterialIcons name="cake" size={16} color="#e11b23" />
-          <Text style={styles.infoText}>DOB: {formatDate(item.dob)}</Text>
-        </View>
-        
-        <View style={styles.guardianSection}>
-          <Text style={styles.guardianLabel}>Guardian Details:</Text>
-          <View style={styles.guardianInfo}>
-            <Text style={styles.guardianName}>{item.guardian_name}</Text>
-            <Text style={styles.guardianPhone}>{item.guardian_mobile_number}</Text>
-          </View>
+          <Ionicons name="book-outline" size={16} color="#e11b23" />
+          <Text style={styles.infoText}>
+            Subjects: {item.assigned_subjects || 'Not Assigned'}
+          </Text>
         </View>
       </View>
 
@@ -114,7 +97,7 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
           Updated: {formatDate(item.updated_at)}
         </Text>
         <TouchableOpacity style={styles.actionButton}>
-          <MaterialIcons name="more-vert" size={20} color="#e11b23" />
+          <Ionicons name="ellipsis-vertical" size={20} color="#e11b23" />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -122,33 +105,32 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
 
   const renderEmptyComponent = (): React.JSX.Element => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="school" size={64} color="#ccc" />
-      <Text style={styles.emptyText}>No students found</Text>
+      <Ionicons name="person-remove-outline" size={64} color="#ccc" />
+      <Text style={styles.emptyText}>No teachers found</Text>
     </View>
   );
-
+  
   const renderSeparator = (): React.JSX.Element => <View style={styles.separator} />;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Students List</Text>
+        <Text style={styles.headerTitle}>Teachers List</Text>
         <Text style={styles.headerCount}>
-          {dataStudent?.length || 0} Students
+          {section_teachers?.length || 0} Teachers
         </Text>
       </View>
       
-      <FlatList<Student>
-        data={dataStudent || []}
-        renderItem={renderStudentCard}
-        keyExtractor={(item: Student) => item.student_id.toString()}
+      <FlatList<Teacher>
+        data={section_teachers || []}
+        renderItem={renderTeacherCard}
+        keyExtractor={(item: Teacher) => item.teacher_id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={renderSeparator}
         ListEmptyComponent={renderEmptyComponent}
       />
     </View>
-
   );
 }
 
@@ -158,12 +140,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-   // backgroundColor: '#e11b23',
     paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
   },
   headerTitle: {
     color: '#282c3f',
@@ -171,23 +154,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerCount: {
-    color: 'white',
+    color: '#666',
     fontSize: 14,
-    opacity: 0.9,
+    fontWeight: '500',
   },
   listContainer: {
     padding: 16,
   },
-  studentCard: {
+  teacherCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
@@ -229,13 +209,13 @@ const styles = StyleSheet.create({
   nameSection: {
     flex: 1,
   },
-  studentName: {
+  teacherName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 2,
   },
-  rollNumber: {
+  teacherEmail: {
     fontSize: 14,
     color: '#666',
   },
@@ -253,7 +233,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cardBody: {
-    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   infoRow: {
     flexDirection: 'row',
@@ -266,36 +248,12 @@ const styles = StyleSheet.create({
     color: '#555',
     flex: 1,
   },
-  guardianSection: {
-    marginTop: 8,
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-  },
-  guardianLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#e11b23',
-    marginBottom: 4,
-  },
-  guardianInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  guardianName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  guardianPhone: {
-    fontSize: 14,
-    color: '#666',
-  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 12,
+    marginTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },

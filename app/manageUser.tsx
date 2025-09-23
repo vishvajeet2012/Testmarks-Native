@@ -1904,7 +1904,6 @@ const createStyles = (theme: typeof lightTheme) => StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Error state styles
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
