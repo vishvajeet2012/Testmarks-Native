@@ -11,12 +11,14 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from 'react-native';
 import { useDispatch } from 'react-redux';
+import AddedSectionTeachers from './addsectionteacher';
 
 type Params = {
   classId?: string;
@@ -29,9 +31,10 @@ type ActiveView = 'info' | 'students' | 'teachers' | 'settings';
 
 export default function SectionManagement() {
   const { sectionId, sectionName } = useLocalSearchParams<Params>();
-  const dispatch =useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   const { loading, error, data } = useAppSelector((s) => s.section);
   const [activeView, setActiveView] = useState<ActiveView>('info');
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
 
   useEffect(() => {
     const id = Number(sectionId);
@@ -71,12 +74,15 @@ export default function SectionManagement() {
   };
 
   const handleAddTeacher = () => {
-    Alert.alert('Add Teacher', 'Navigate to add teacher form');
+    setShowAddTeacherModal(true);
+  };
+
+  const handleCloseAddTeacher = () => {
+    setShowAddTeacherModal(false);
   };
 
   const handleManageSection = () => {
     setActiveView('settings');
-    // Removed the alert to allow the view to switch first
   };
 
   const handleShowInfo = () => {
@@ -121,7 +127,7 @@ export default function SectionManagement() {
         </TouchableOpacity>
       );
     }
-    return null; // Return null for 'info' and 'settings' views
+    return null;
   };
 
   return (
@@ -175,10 +181,22 @@ export default function SectionManagement() {
       </View>
 
       {renderFloatingButton()}
+
+      {/* Add Teacher Modal */}
+      <Modal
+        visible={showAddTeacherModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseAddTeacher}
+      >
+        <AddedSectionTeachers
+          onClose={handleCloseAddTeacher}
+          sectionId={Number(sectionId)}
+        />
+      </Modal>
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

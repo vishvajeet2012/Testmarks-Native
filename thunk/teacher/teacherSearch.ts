@@ -1,5 +1,5 @@
 // thunk/teacher/teacherSearch.ts
-import { USER_URL } from '@/utils/baseUrl';
+import { Teacher_URL } from '@/utils/baseUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
@@ -37,7 +37,7 @@ export const fetchTeacherBySearch = createAsyncThunk<
       }
 
       const response = await axios.post(
-        `${USER_URL}/searchteacher`,
+        `${Teacher_URL}/searchteacher`,
         { name },
         {
           headers: {
@@ -63,7 +63,6 @@ export const fetchTeacherBySearch = createAsyncThunk<
   }
 );
 
-// ✅ Slice
 const teacherSearchSlice = createSlice({
   name: 'teacherSearch',
   initialState,

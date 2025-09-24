@@ -1,13 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
+import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
+import teacherSearchReducer from "../thunk/teacher/teacherSearch";
 import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
 import createClassReducer from "./slice/createClass";
 import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice';
 import userReducer from './slice/userSlice';
-
-import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
-
 
 
 export const store = configureStore({
@@ -18,8 +17,8 @@ export const store = configureStore({
     class: classReducer,
     classesGetAll: classesgetallReducer,
     createClass: createClassReducer,
-    section: sectionReducer,//// get all seciton addmin ka hai 
-
+    section: sectionReducer,
+    teacherSearch:teacherSearchReducer
 
   },
 });

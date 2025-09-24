@@ -3,3 +3,4 @@
 
 export const  Serverurl= "https://serversql-brown.vercel.app"
 export const USER_URL ="https://serversql-brown.vercel.app/api/user"
+export const Teacher_URL ="https://serversql-brown.vercel.app/api/teacher"

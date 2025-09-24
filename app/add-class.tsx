@@ -3,18 +3,18 @@ import { RootState } from '@/redux/store';
 import { createClass } from '@/thunk/classandsection/createClass';
 import React, { useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from 'react-native';
 
 type SectionLabel = 'Section A' | 'Section B' | 'Section C' | 'Section D' | 'Section E' | 'Section F' | 'Section G' | 'Section H';
@@ -22,10 +22,9 @@ type SectionLabel = 'Section A' | 'Section B' | 'Section C' | 'Section D' | 'Sec
 export default function AddClass() {
   const dispatch = useAppDispatch();
 
-  // Form state
   const [className, setClassName] = useState('');
   const [description, setDescription] = useState('');
-  const [subjects, setSubjects] = useState(''); // e.g. "English, Math, Biology"
+  const [subjects, setSubjects] = useState(''); 
   const [classTeacherId, setClassTeacherId] = useState('');
   const [selectedSections, setSelectedSections] = useState<SectionLabel[]>([]);
   const [showSectionsModal, setShowSectionsModal] = useState(false);
