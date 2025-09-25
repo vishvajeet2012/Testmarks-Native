@@ -25,11 +25,19 @@ interface SectionTeacher {
   email: string;
 }
 
+// Updated interface to match the actual data structure
+interface AssignedSubject {
+  class_id: number;
+  subject_id: number;
+  assigned_at: string;
+  subject_name: string;
+}
+
 interface ClassTeacher {
   teacher_id: number;
   name: string;
   email: string;
-  assigned_subjects: string[];
+  assigned_subjects: AssignedSubject[]; // Changed from string[] to AssignedSubject[]
   class_assignments: Array<{ class_id: number; section_id: number }>;
   created_at: string;
   updated_at: string;
@@ -102,7 +110,7 @@ export default function ClassManagement() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme;
   const dispatch = useAppDispatch();
-    const { classes, loading, error } = useAppSelector((state) => state.classesGetAll);
+  const { classes, loading, error } = useAppSelector((state) => state.classesGetAll);
   
   const [statusFilter, setStatusFilter] = useState<"All" | "With Teacher" | "Without Teacher">("All");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -203,7 +211,6 @@ export default function ClassManagement() {
           text: 'Delete', 
           style: 'destructive',
           onPress: () => {
-            // Implement your delete logic here
             console.log('Deleting class:', classItem.class_id);
           }
         }
@@ -215,10 +222,9 @@ export default function ClassManagement() {
     router.push({
       pathname: '/sectionmanagement',
       params: { 
-    
-      sectionId: section?.section_id,
-      sectionName: section?.section_name          
-    }
+        sectionId: section?.section_id,
+        sectionName: section?.section_name          
+      }
     });
   };
 
@@ -275,13 +281,14 @@ export default function ClassManagement() {
               </View>
               <Text style={styles.teacherName}>{classTeacher.name}</Text>
               <Text style={styles.teacherEmail}>{classTeacher.email}</Text>
+              {/* Fixed: Properly handle assigned_subjects as objects */}
               {classTeacher.assigned_subjects && classTeacher.assigned_subjects.length > 0 && (
                 <View style={styles.subjectsContainer}>
                   <Text style={styles.subjectsLabel}>Subjects:</Text>
                   <View style={styles.subjectsList}>
-                    {classTeacher.assigned_subjects.map((subject: string, index: number) => (
-                      <View key={index} style={styles.subjectBadge}>
-                        <Text style={styles.subjectText}>{subject}</Text>
+                    {classTeacher.assigned_subjects.map((subject: AssignedSubject, index: number) => (
+                      <View key={subject.subject_id || index} style={styles.subjectBadge}>
+                        <Text style={styles.subjectText}>{subject.subject_name}</Text>
                       </View>
                     ))}
                   </View>
@@ -302,11 +309,13 @@ export default function ClassManagement() {
                 <Text style={styles.sectionsTitle}>Sections</Text>
               </View>
 
-              
               <View style={styles.sectionsList}>
                 {classItem.sections.map((section) => (
-                  <TouchableOpacity     onPress={() => handleManageSections( section)}
- key={section.section_id} style={styles.sectionItem}>
+                  <TouchableOpacity 
+                    onPress={() => handleManageSections(section)}
+                    key={section.section_id} 
+                    style={styles.sectionItem}
+                  >
                     <Text style={styles.sectionName}>{section.section_name}</Text>
                     <View style={styles.sectionDetails}>
                       <Text style={styles.sectionStudents}>
@@ -346,8 +355,6 @@ export default function ClassManagement() {
             <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
           
-          
-
           <TouchableOpacity 
             style={styles.deleteBtn}
             onPress={() => handleDeleteClass(classItem)}
@@ -587,6 +594,7 @@ export default function ClassManagement() {
     </SafeAreaView>
   );
 }
+
 
 
 

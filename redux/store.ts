@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
+import addSectionTeacehr from '../thunk/section/addSectionTeacher';
+import subjectReducer from '../thunk/subject/searchSubject';
 import teacherSearchReducer from "../thunk/teacher/teacherSearch";
 import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
@@ -18,7 +20,9 @@ export const store = configureStore({
     classesGetAll: classesgetallReducer,
     createClass: createClassReducer,
     section: sectionReducer,
-    teacherSearch:teacherSearchReducer
+    teacherSearch: teacherSearchReducer,
+    subject: subjectReducer,
+    addSectionTeacher: addSectionTeacehr,
 
   },
 });

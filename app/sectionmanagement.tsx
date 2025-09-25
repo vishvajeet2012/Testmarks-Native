@@ -182,16 +182,17 @@ export default function SectionManagement() {
 
       {renderFloatingButton()}
 
-      {/* Add Teacher Modal */}
       <Modal
         visible={showAddTeacherModal}
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={handleCloseAddTeacher}
       >
-        <AddedSectionTeachers
+        <AddedSectionTeachers 
           onClose={handleCloseAddTeacher}
           sectionId={Number(sectionId)}
+          sectionName={sectionName}
+          
         />
       </Modal>
     </View>

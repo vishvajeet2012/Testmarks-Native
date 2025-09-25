@@ -1,20 +1,34 @@
 import React from 'react';
 import {
-    Dimensions,
-    FlatList,
-    Image,
-    ListRenderItem,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Dimensions,
+  FlatList,
+  Image,
+  ListRenderItem,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-// 2. Updated the font loading call
 Ionicons.loadFont();
 
 const { width } = Dimensions.get('window');
+
+interface SubjectAssignment {
+  class_id: number;
+  subject_id: number;
+  assigned_at: string;
+  subject_name: string;
+}
+
+interface ClassAssignment {
+  class_id: number;
+  section_id: number;
+  class_name?: string;
+  section_name?: string;
+  assigned_at?: string;
+}
 
 interface Teacher {
   teacher_id: number;
@@ -22,8 +36,8 @@ interface Teacher {
   email: string;
   mobile_number: string | null;
   profile_picture: string | null;
-  assigned_subjects: string | null;
-  class_assignments: string | null;
+  assigned_subjects: (string | SubjectAssignment)[] | null; // Mixed array type
+  class_assignments: ClassAssignment[] | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -42,6 +56,32 @@ export default function SectionTeacherView({ section_teachers }: SectionTeacherV
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Helper function to format assigned subjects (mixed array of strings and objects)
+  const formatAssignedSubjects = (subjects: (string | SubjectAssignment)[] | null): string => {
+    if (!subjects || subjects.length === 0) return 'Not Assigned';
+    
+    return subjects
+      .map(subject => {
+        if (typeof subject === 'string') {
+          return subject;
+        } else {
+          return subject.subject_name || 'Unknown Subject'; 
+        }
+      })
+      .join(', ');
+  };
+
+  const formatClassAssignments = (assignments: ClassAssignment[] | null): string => {
+    if (!assignments || assignments.length === 0) return 'Not Assigned';
+    
+    return assignments
+      .map(assignment => {
+        const className = assignment.class_name || "";
+        const sectionName = assignment.section_name || "";
+        return `${className} - ${sectionName}`;
+      });
   };
 
   const renderTeacherCard: ListRenderItem<Teacher> = ({ item }) => (
@@ -78,7 +118,6 @@ export default function SectionTeacherView({ section_teachers }: SectionTeacherV
       </View>
 
       <View style={styles.cardBody}>
-        {/* 3. Replaced MaterialIcons with Ionicons and updated icon names */}
         <View style={styles.infoRow}>
           <Ionicons name="call-outline" size={16} color="#e11b23" />
           <Text style={styles.infoText}>{item.mobile_number || 'N/A'}</Text>
@@ -87,7 +126,14 @@ export default function SectionTeacherView({ section_teachers }: SectionTeacherV
         <View style={styles.infoRow}>
           <Ionicons name="book-outline" size={16} color="#e11b23" />
           <Text style={styles.infoText}>
-            Subjects: {item.assigned_subjects || 'Not Assigned'}
+            Subjects: {formatAssignedSubjects(item.assigned_subjects)}
+          </Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="school-outline" size={16} color="#e11b23" />
+          <Text style={styles.infoText}>
+            Classes: {formatClassAssignments(item.class_assignments)}
           </Text>
         </View>
       </View>

@@ -1,6 +1,6 @@
 import { USER_URL } from '@/utils/baseUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
 

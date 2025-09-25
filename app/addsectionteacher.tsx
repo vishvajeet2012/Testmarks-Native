@@ -1,123 +1,155 @@
-import { AppDispatch, RootState } from '@/redux/store';
+import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
+import { createClass } from '@/thunk/section/addSectionTeacher';
+import { clearSubjects, searchSubject } from '@/thunk/subject/searchSubject';
 import { clearTeachers, fetchTeacherBySearch } from '@/thunk/teacher/teacherSearch';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 
 // Types
-interface Section {
-  section_id: number;
-  section_name: string;
-  class_id: number;
-  class_name: string;
-}
-
 interface Teacher {
   teacher_id: number;
   name: string;
   email: string;
 }
 
+interface TeacherSearch {
+  teacher_id: number;
+  name: string;
+  email: string;
+  mobile_number: string;
+}
+
 interface Subject {
   subject_id: number;
   subject_name: string;
   class_id: number;
+  Renamedclass?: {
+    class_name: string;
+    description: string;
+  };
+  created_at?: string;
 }
 
 interface FormData {
-  section_id: number | null;
   teacher_id: number | null;
   subject_ids: number[];
 }
 
+interface SectionData {
+  section_id: number;
+  section_name: string;
+}
+
 const MAIN_COLOR = '#e11b23';
 
-export default function AddedSectionTeachers() {
+export default function AddedSectionTeachers({ 
+  sectionId, 
+  sectionName 
+}: { 
+  sectionId: number;
+  sectionName: string;
+}) {
+  const [searchTeacherByName, setSearchTeacherByName] = useState('');
+  const [searchName, setSearchName] = useState('');
+  const [showTeacherSearchModal, setShowTeacherSearchModal] = useState(false);
+  const [showSubjectSearchModal, setShowSubjectSearchModal] = useState(false);
+  
+  const dispatch = useAppDispatch();
+  
+  // Redux selectors
+  const { 
+    teachers: searchTeacherResult, 
+    loading: searchTeacherLoading, 
+    error: searchTeacherError 
+  } = useAppSelector((state) => state.teacherSearch);
 
-   const [searchTeacherByname, setSearchTeacherByName] = useState('');
+  const { 
+    subjects: subjectResult, 
+    loading: subjectLoading, 
+    error: subjectError 
+  } = useAppSelector((state) => state.subject);
 
-  const dispatch = useDispatch<AppDispatch>();
-  const { teachers:SearchTeacherResult, loading:searchTeacherLoading, error:SearhTeacherError } = useSelector((state: RootState) => state.teacherSearch);
+  const { 
+    loading: sectionLoading, 
+    error: sectionError, 
+    createdClass, 
+    message 
+  } = useAppSelector((state) => state.addSectionTeacher);
 
-  const handleSearch = () => {
-    if (searchTeacherByname.trim()) {
-      dispatch(fetchTeacherBySearch(searchTeacherByname));
-    }
-  };
-
-  const handleClear = () => {
-    dispatch(clearTeachers());
-    searchTeacherByname('');
-  };
-
-
-
-
-  const [sections, setSections] = useState<Section[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [showSubjectModal, setShowSubjectModal] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<FormData>({
-    section_id: null,
     teacher_id: null,
     subject_ids: []
   });
 
   const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedTeacherDetails, setSelectedTeacherDetails] = useState<Teacher | null>(null);
+  const [sectionDetails, setSectionDetails] = useState<SectionData | null>(null);
 
   useEffect(() => {
     loadInitialData();
   }, []);
 
   useEffect(() => {
-    if (formData.section_id) {
-      const section = sections.find(s => s.section_id === formData.section_id);
-      if (section) {
-        const filteredSubjects = subjects.filter(sub => sub.class_id === section.class_id);
-        setAvailableSubjects(filteredSubjects);
-        setFormData(prev => ({ ...prev, subject_ids: [] }));
-      }
-    } else {
-      setAvailableSubjects([]);
+    if (sectionId) {
+      loadSectionDetails();
+      loadSubjectsForSection();
     }
-  }, [formData.section_id, subjects, sections]);
+  }, [sectionId]);
+
+  useEffect(() => {
+    if (createdClass && message) {
+      Alert.alert('Success', message);
+      resetForm();
+    }
+    if (sectionError) {
+      Alert.alert('Error', sectionError);
+    }
+  }, [createdClass, message, sectionError]);
+
+  const loadSectionDetails = async (): Promise<void> => {
+    try {
+      const sectionData: SectionData = {
+        section_id: sectionId,
+        section_name: sectionName,
+      };
+      setSectionDetails(sectionData);
+    } catch (error) {
+      console.error('Error loading section details:', error);
+    }
+  };
+
+  const loadSubjectsForSection = async (): Promise<void> => {
+    try {
+      // Load subjects from API or leave empty for now
+      setSubjects([]);
+      setAvailableSubjects([]);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  };
 
   const loadInitialData = async (): Promise<void> => {
     setLoading(true);
     try {
-      setSections([
-        { section_id: 1, section_name: 'A', class_id: 1, class_name: 'Class 10' },
-        { section_id: 2, section_name: 'B', class_id: 1, class_name: 'Class 10' },
-        { section_id: 3, section_name: 'A', class_id: 2, class_name: 'Class 9' },
-      ]);
-
-      setTeachers([
-        { teacher_id: 1, name: 'John Smith', email: 'john@school.com' },
-        { teacher_id: 2, name: 'Sarah Johnson', email: 'sarah@school.com' },
-        { teacher_id: 3, name: 'Mike Wilson', email: 'mike@school.com' },
-      ]);
-
-      setSubjects([
-        { subject_id: 1, subject_name: 'Mathematics', class_id: 1 },
-        { subject_id: 2, subject_name: 'Physics', class_id: 1 },
-        { subject_id: 3, subject_name: 'Chemistry', class_id: 1 },
-        { subject_id: 4, subject_name: 'English', class_id: 2 },
-        { subject_id: 5, subject_name: 'History', class_id: 2 },
-      ]);
+      // Load teachers from API or leave empty for now
+      setTeachers([]);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -125,16 +157,63 @@ export default function AddedSectionTeachers() {
     }
   };
 
-  const handleSectionChange = (sectionId: number | null): void => {
-    setFormData(prev => ({ 
-      ...prev, 
-      section_id: sectionId,
-      subject_ids: [] 
-    }));
+  // Teacher search functions
+  const handleTeacherSearch = () => {
+    if (searchTeacherByName.trim()) {
+      dispatch(fetchTeacherBySearch(searchTeacherByName));
+    }
   };
 
-  const handleTeacherChange = (teacherId: number | null): void => {
-    setFormData(prev => ({ ...prev, teacher_id: teacherId }));
+  const handleClearTeacherSearch = () => {
+    dispatch(clearTeachers());
+    setSearchTeacherByName('');
+  };
+
+  const handleTeacherPress = (teacher: TeacherSearch) => {
+    setFormData(prev => ({ ...prev, teacher_id: teacher.teacher_id }));
+    setSelectedTeacherDetails({
+      teacher_id: teacher.teacher_id,
+      name: teacher.name,
+      email: teacher.email
+    });
+    setShowTeacherSearchModal(false);
+    handleClearTeacherSearch();
+  };
+
+  const handleSubjectSearch = async () => {
+    if (searchName.trim()) {
+      try {
+        const result = await dispatch(searchSubject({ name: searchName.trim() })).unwrap();
+        console.log('Search successful:', result);
+      } catch (error) {
+        console.error('Search failed:', error);
+      }
+    }
+  };
+
+  const handleClearSubjectSearch = () => {
+    setSearchName('');
+    dispatch(clearSubjects());
+  };
+
+  const handleSubjectPress = (subject: Subject) => {
+    const isSelected = formData.subject_ids.includes(subject.subject_id);
+    if (isSelected) {
+      setFormData(prev => ({
+        ...prev,
+        subject_ids: prev.subject_ids.filter(id => id !== subject.subject_id)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        subject_ids: [...prev.subject_ids, subject.subject_id]
+      }));
+    }
+  };
+
+  const handleTeacherSelect = (teacher: Teacher) => {
+    setFormData(prev => ({ ...prev, teacher_id: teacher.teacher_id }));
+    setSelectedTeacherDetails(teacher);
   };
 
   const handleSubjectToggle = (subjectId: number): void => {
@@ -146,73 +225,95 @@ export default function AddedSectionTeachers() {
     }));
   };
 
-  const handleSubmit = async (): Promise<void> => {
-    if (!formData.section_id || !formData.teacher_id) {
-      Alert.alert('Error', 'Please select both section and teacher');
+  const handleCreate = () => {
+    if (!formData.teacher_id) {
+      Alert.alert('Error', 'Teacher selection is required');
       return;
     }
 
-    setLoading(true);
-    try {
-      const payload = {
-        section_id: formData.section_id,
-        teacher_id: formData.teacher_id,
-        subject_ids: formData.subject_ids
-      };
+    const payload = {
+      section_id: sectionId,
+      teacher_id: formData.teacher_id,
+      subject_ids: formData.subject_ids
+    };
 
-      console.log('Submitting:', payload);
-
-      const response = await fetch('/api/section-teachers/assign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        Alert.alert('Success', 'Teacher assigned successfully!');
-        resetForm();
-      } else {
-        Alert.alert('Error', result.message || 'Assignment failed');
-      }
-    } catch (error) {
-      console.error('Error submitting:', error);
-      Alert.alert('Error', 'Failed to assign teacher');
-    } finally {
-      setLoading(false);
-    }
+    dispatch(createClass(payload));
   };
 
   const resetForm = (): void => {
     setFormData({
-      section_id: null,
       teacher_id: null,
       subject_ids: []
     });
-    setAvailableSubjects([]);
+    setSelectedTeacherDetails(null);
   };
 
   const getSelectedSubjectNames = (): string => {
     const selected = availableSubjects.filter(sub => 
       formData.subject_ids.includes(sub.subject_id)
     );
-    return selected.map(sub => sub.subject_name).join(', ');
-  };
-
-  const getSelectedSectionName = (): string => {
-    if (!formData.section_id) return '';
-    const section = sections.find(s => s.section_id === formData.section_id);
-    return section ? `${section.class_name} - ${section.section_name}` : '';
+    const searchedSelected = subjectResult?.filter(sub => 
+      formData.subject_ids.includes(sub.subject_id)
+    ) || [];
+    
+    const allSelected = [...selected, ...searchedSelected];
+    return allSelected.map(sub => sub.subject_name).join(', ');
   };
 
   const getSelectedTeacherName = (): string => {
+    if (selectedTeacherDetails) {
+      return selectedTeacherDetails.name;
+    }
     if (!formData.teacher_id) return '';
     const teacher = teachers.find(t => t.teacher_id === formData.teacher_id);
     return teacher ? teacher.name : '';
   };
 
-  if (loading && sections.length === 0) {
+  const renderTeacherItem = ({ item }: { item: TeacherSearch }) => (
+    <TouchableOpacity
+      style={styles.teacherItem}
+      onPress={() => handleTeacherPress(item)}
+    >
+      <Text style={styles.teacherName}>{item.name}</Text>
+      <Text style={styles.teacherEmail}>{item.email}</Text>
+      <Text style={styles.teacherMobile}>{item.mobile_number}</Text>
+    </TouchableOpacity>
+  );
+
+  const renderSubjectItem = ({ item }: { item: Subject }) => (
+    <TouchableOpacity
+      style={[
+        styles.subjectSearchItem,
+        formData.subject_ids.includes(item.subject_id) && styles.selectedSearchItem
+      ]}
+      onPress={() => handleSubjectPress(item)}
+    >
+      <View style={styles.subjectSearchInfo}>
+        <Text style={[
+          styles.subjectSearchName,
+          formData.subject_ids.includes(item.subject_id) && styles.selectedSearchText
+        ]}>
+          {item.subject_name}
+        </Text>
+        {item.Renamedclass && (
+          <>
+            <Text style={styles.subjectSearchClass}>Class: {item.Renamedclass.class_name}</Text>
+            <Text style={styles.subjectSearchDescription}>Description: {item.Renamedclass.description}</Text>
+          </>
+        )}
+        {item.created_at && (
+          <Text style={styles.subjectSearchDate}>
+            Created: {new Date(item.created_at).toLocaleDateString()}
+          </Text>
+        )}
+      </View>
+      {formData.subject_ids.includes(item.subject_id) && (
+        <MaterialIcons name="check-circle" size={20} color={MAIN_COLOR} />
+      )}
+    </TouchableOpacity>
+  );
+
+  if (loading && !sectionDetails) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -226,89 +327,143 @@ export default function AddedSectionTeachers() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollContainer}>
-        {/* Header */}
         <View style={styles.header}>
           <MaterialIcons name="school" size={28} color={MAIN_COLOR} />
           <Text style={styles.headerTitle}>Assign Section Teacher</Text>
         </View>
 
+        {sectionDetails && (
+          <View style={styles.sectionInfoContainer}>
+            <Text style={styles.sectionInfoTitle}>Section Information</Text>
+            <View style={styles.sectionInfo}>
+              <Text style={styles.sectionInfoText}>
+                <Text style={styles.sectionInfoLabel}>Section:</Text> {sectionDetails.section_name}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Main Form */}
         <View style={styles.formContainer}>
-          {/* Section Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Select Section</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={formData.section_id}
-                onValueChange={handleSectionChange}
-                style={styles.picker}
-              >
-                <Picker.Item label="Choose Section..." value={null} />
-                {sections.map((section) => (
-                  <Picker.Item
-                    key={section.section_id}
-                    label={`${section.class_name} - ${section.section_name}`}
-                    value={section.section_id}
-                  />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
           {/* Teacher Selection */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Select Teacher</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={formData.teacher_id}
-                onValueChange={handleTeacherChange}
-                style={styles.picker}
-              >
-                <Picker.Item label="Choose Teacher..." value={null} />
-                {teachers.map((teacher) => (
-                  <Picker.Item
-                    key={teacher.teacher_id}
-                    label={`${teacher.name} (${teacher.email})`}
-                    value={teacher.teacher_id}
-                  />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          {/* Subject Selection (Only if section is selected) */}
-          {formData.section_id && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Assign Subjects (Optional)</Text>
-              <TouchableOpacity
-                style={styles.subjectButton}
-                onPress={() => setShowSubjectModal(true)}
-              >
-                <Text style={styles.subjectButtonText}>
-                  {formData.subject_ids.length > 0 
-                    ? `${formData.subject_ids.length} subject(s) selected`
-                    : 'Select subjects...'
-                  }
-                </Text>
-                <MaterialIcons name="arrow-drop-down" size={24} color={MAIN_COLOR} />
-              </TouchableOpacity>
-              
-              {formData.subject_ids.length > 0 && (
-                <Text style={styles.selectedSubjects}>
-                  {getSelectedSubjectNames()}
-                </Text>
+            <Text style={styles.label}>Select Teacher *</Text>
+            
+            {/* Teacher Selection Options */}
+            <View style={styles.selectionOptions}>
+              {/* Quick Select from Available Teachers */}
+              {teachers.length > 0 ? (
+                <>
+                  <Text style={styles.subLabel}>Available Teachers:</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.teacherScrollView}>
+                    <View style={styles.teacherChipsContainer}>
+                      {teachers.map((teacher) => (
+                        <TouchableOpacity
+                          key={teacher.teacher_id}
+                          style={[
+                            styles.teacherChip,
+                            formData.teacher_id === teacher.teacher_id && styles.selectedTeacherChip
+                          ]}
+                          onPress={() => handleTeacherSelect(teacher)}
+                        >
+                          <Text style={[
+                            styles.teacherChipText,
+                            formData.teacher_id === teacher.teacher_id && styles.selectedTeacherChipText
+                          ]}>
+                            {teacher.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </>
+              ) : (
+                <Text style={styles.noDataText}>No teachers available. Use search to find teachers.</Text>
               )}
             </View>
-          )}
+            
+            {/* Search Teacher Button */}
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => setShowTeacherSearchModal(true)}
+            >
+              <MaterialIcons name="search" size={20} color={MAIN_COLOR} />
+              <Text style={styles.searchButtonText}>Search Teachers</Text>
+            </TouchableOpacity>
+
+            {/* Selected Teacher Display */}
+            {selectedTeacherDetails && (
+              <View style={styles.selectedTeacherContainer}>
+                <Text style={styles.selectedTeacherLabel}>Selected Teacher:</Text>
+                <View style={styles.selectedTeacherInfo}>
+                  <MaterialIcons name="person" size={16} color={MAIN_COLOR} />
+                  <Text style={styles.selectedTeacherName}>{selectedTeacherDetails.name}</Text>
+                  <Text style={styles.selectedTeacherEmail}>({selectedTeacherDetails.email})</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Subject Selection */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Assign Subjects (Optional)</Text>
+            
+            {/* Available Subjects */}
+            {availableSubjects.length > 0 ? (
+              <>
+                <Text style={styles.subLabel}>Available Subjects for this Section:</Text>
+                <View style={styles.subjectsGrid}>
+                  {availableSubjects.map((subject) => (
+                    <TouchableOpacity
+                      key={subject.subject_id}
+                      style={[
+                        styles.subjectChip,
+                        formData.subject_ids.includes(subject.subject_id) && styles.selectedSubjectChip
+                      ]}
+                      onPress={() => handleSubjectToggle(subject.subject_id)}
+                    >
+                      <Text style={[
+                        styles.subjectChipText,
+                        formData.subject_ids.includes(subject.subject_id) && styles.selectedSubjectChipText
+                      ]}>
+                        {subject.subject_name}
+                      </Text>
+                      {formData.subject_ids.includes(subject.subject_id) && (
+                        <MaterialIcons name="check" size={16} color="white" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={styles.noDataText}>No subjects available for this section.</Text>
+            )}
+            
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => setShowSubjectSearchModal(true)}
+            >
+              <MaterialIcons name="search" size={20} color={MAIN_COLOR} />
+              <Text style={styles.searchButtonText}>Search Subjects</Text>
+            </TouchableOpacity>
+            
+            {/* Selected Subjects Summary */}
+            {formData.subject_ids.length > 0 && (
+              <View style={styles.selectedSubjectsContainer}>
+                <Text style={styles.selectedSubjectsLabel}>Selected Subjects:</Text>
+                <Text style={styles.selectedSubjectsText}>{getSelectedSubjectNames()}</Text>
+              </View>
+            )}
+          </View>
 
           {/* Form Summary */}
-          {(formData.section_id || formData.teacher_id || formData.subject_ids.length > 0) && (
+          {(formData.teacher_id || formData.subject_ids.length > 0) && (
             <View style={styles.summaryContainer}>
               <Text style={styles.summaryTitle}>Assignment Summary</Text>
-              {formData.section_id && (
+              {sectionDetails && (
                 <Text style={styles.summaryItem}>
                   <Text style={styles.summaryLabel}>Section: </Text>
-                  {getSelectedSectionName()}
+                  {sectionDetails.section_name}
                 </Text>
               )}
               {formData.teacher_id && (
@@ -338,12 +493,12 @@ export default function AddedSectionTeachers() {
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                (!formData.section_id || !formData.teacher_id || loading) && styles.disabledButton
+                (!formData.teacher_id || sectionLoading) && styles.disabledButton
               ]}
-              onPress={handleSubmit}
-              disabled={!formData.section_id || !formData.teacher_id || loading}
+              onPress={handleCreate}
+              disabled={!formData.teacher_id || sectionLoading}
             >
-              {loading ? (
+              {sectionLoading ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <>
@@ -356,54 +511,139 @@ export default function AddedSectionTeachers() {
         </View>
       </ScrollView>
 
-      {/* Subject Selection Modal */}
+      {/* Teacher Search Modal */}
       <Modal
-        visible={showSubjectModal}
+        visible={showTeacherSearchModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowSubjectModal(false)}
+        onRequestClose={() => setShowTeacherSearchModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View style={styles.searchModalContainer}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Subjects</Text>
+              <Text style={styles.modalTitle}>Search Teacher</Text>
               <TouchableOpacity
-                onPress={() => setShowSubjectModal(false)}
+                onPress={() => setShowTeacherSearchModal(false)}
                 style={styles.closeButton}
               >
                 <MaterialIcons name="close" size={24} color={MAIN_COLOR} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
-              {availableSubjects.map((subject) => (
+            <View style={styles.searchInputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Enter teacher name..."
+                value={searchTeacherByName}
+                onChangeText={setSearchTeacherByName}
+              />
+              <View style={styles.searchButtonRow}>
                 <TouchableOpacity
-                  key={subject.subject_id}
-                  style={[
-                    styles.subjectOption,
-                    formData.subject_ids.includes(subject.subject_id) && styles.selectedOption
-                  ]}
-                  onPress={() => handleSubjectToggle(subject.subject_id)}
+                  style={styles.searchActionButton}
+                  onPress={handleTeacherSearch}
+                  disabled={searchTeacherLoading}
                 >
-                  <Text style={[
-                    styles.subjectOptionText,
-                    formData.subject_ids.includes(subject.subject_id) && styles.selectedOptionText
-                  ]}>
-                    {subject.subject_name}
-                  </Text>
-                  {formData.subject_ids.includes(subject.subject_id) && (
-                    <MaterialIcons name="check-circle" size={20} color={MAIN_COLOR} />
+                  {searchTeacherLoading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.searchActionButtonText}>Search</Text>
                   )}
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+                <TouchableOpacity
+                  style={styles.clearActionButton}
+                  onPress={handleClearTeacherSearch}
+                >
+                  <Text style={styles.clearActionButtonText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.searchResults}>
+              {searchTeacherResult && searchTeacherResult.length > 0 ? (
+                <FlatList
+                  data={searchTeacherResult}
+                  keyExtractor={(item) => item.teacher_id.toString()}
+                  renderItem={renderTeacherItem}
+                  style={styles.resultsList}
+                />
+              ) : (
+                <Text style={styles.noResultsText}>
+                  {searchTeacherByName ? 'No teachers found' : 'Enter a name to search'}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Subject Search Modal */}
+      <Modal
+        visible={showSubjectSearchModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSubjectSearchModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.searchModalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Search Subjects</Text>
+              <TouchableOpacity
+                onPress={() => setShowSubjectSearchModal(false)}
+                style={styles.closeButton}
+              >
+                <MaterialIcons name="close" size={24} color={MAIN_COLOR} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchInputContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Enter subject name..."
+                value={searchName}
+                onChangeText={setSearchName}
+              />
+              <View style={styles.searchButtonRow}>
+                <TouchableOpacity
+                  style={styles.searchActionButton}
+                  onPress={handleSubjectSearch}
+                  disabled={subjectLoading}
+                >
+                  {subjectLoading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.searchActionButtonText}>Search</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clearActionButton}
+                  onPress={handleClearSubjectSearch}
+                >
+                  <Text style={styles.clearActionButtonText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.searchResults}>
+              {subjectResult && subjectResult.length > 0 ? (
+                <FlatList
+                  data={subjectResult}
+                  keyExtractor={(item) => item.subject_id.toString()}
+                  renderItem={renderSubjectItem}
+                  style={styles.resultsList}
+                />
+              ) : (
+                <Text style={styles.noResultsText}>
+                  {searchName ? 'No subjects found' : 'Enter a name to search'}
+                </Text>
+              )}
+            </View>
 
             <TouchableOpacity
               style={styles.confirmButton}
-              onPress={() => setShowSubjectModal(false)}
+              onPress={() => setShowSubjectSearchModal(false)}
             >
               <Text style={styles.confirmButtonText}>
-                Confirm ({formData.subject_ids.length} selected)
+                Done ({formData.subject_ids.length} selected)
               </Text>
             </TouchableOpacity>
           </View>
@@ -444,6 +684,37 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: '#333',
   },
+  sectionInfoContainer: {
+    backgroundColor: 'white',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: MAIN_COLOR,
+    marginBottom: 8,
+  },
+  sectionInfo: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+  },
+  sectionInfoText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
+  },
+  sectionInfoLabel: {
+    fontWeight: '600',
+    color: MAIN_COLOR,
+  },
   formContainer: {
     backgroundColor: 'white',
     margin: 16,
@@ -462,37 +733,137 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 12,
+  },
+  subLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
     marginBottom: 8,
   },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
+  selectionOptions: {
+    marginBottom: 12,
   },
-  picker: {
-    height: 50,
+  teacherScrollView: {
+    marginBottom: 8,
   },
-  subjectButton: {
+  teacherChipsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  teacherChip: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
   },
-  subjectButtonText: {
+  selectedTeacherChip: {
+    backgroundColor: MAIN_COLOR,
+    borderColor: MAIN_COLOR,
+  },
+  teacherChipText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedTeacherChipText: {
+    color: 'white',
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: MAIN_COLOR,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  searchButtonText: {
+    color: MAIN_COLOR,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  selectedTeacherContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: MAIN_COLOR,
+  },
+  selectedTeacherLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: MAIN_COLOR,
+    marginBottom: 4,
+  },
+  selectedTeacherInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedTeacherName: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#333',
   },
-  selectedSubjects: {
+  selectedTeacherEmail: {
     fontSize: 14,
+    color: '#666',
+  },
+  subjectsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  subjectChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    gap: 6,
+  },
+  selectedSubjectChip: {
+    backgroundColor: MAIN_COLOR,
+    borderColor: MAIN_COLOR,
+  },
+  subjectChipText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedSubjectChipText: {
+    color: 'white',
+  },
+  selectedSubjectsContainer: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  selectedSubjectsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
     color: MAIN_COLOR,
-    marginTop: 8,
-    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  selectedSubjectsText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
   },
   summaryContainer: {
     backgroundColor: '#f9f9f9',
@@ -554,6 +925,13 @@ const styles = StyleSheet.create({
     color: 'white',
     marginLeft: 8,
   },
+  noDataText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
   // Modal Styles
   modalOverlay: {
     flex: 1,
@@ -561,12 +939,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContainer: {
+  searchModalContainer: {
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
-    width: '90%',
-    maxHeight: '70%',
+    width: '95%',
+    maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -582,28 +960,119 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  modalContent: {
-    maxHeight: 300,
+  searchInputContainer: {
+    marginBottom: 16,
   },
-  subjectOption: {
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
+  },
+  searchButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    gap: 8,
+  },
+  searchActionButton: {
+    flex: 1,
+    backgroundColor: MAIN_COLOR,
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  searchActionButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  clearActionButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  clearActionButtonText: {
+    color: '#666',
+    fontWeight: '600',
+  },
+  searchResults: {
+    flex: 1,
+    minHeight: 200,
+  },
+  resultsList: {
+    flex: 1,
+  },
+  noResultsText: {
+    textAlign: 'center',
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 50,
+  },
+  teacherItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: 'white',
+  },
+  teacherName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  teacherEmail: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  teacherMobile: {
+    fontSize: 14,
+    color: '#666',
+  },
+  subjectSearchItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: 'white',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
-  selectedOption: {
+  selectedSearchItem: {
     backgroundColor: '#f0f8ff',
   },
-  subjectOptionText: {
-    fontSize: 16,
-    color: '#333',
+  subjectSearchInfo: {
+    flex: 1,
   },
-  selectedOptionText: {
+  subjectSearchName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  selectedSearchText: {
     color: MAIN_COLOR,
-    fontWeight: '600',
+  },
+  subjectSearchClass: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  subjectSearchDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 2,
+  },
+  subjectSearchDate: {
+    fontSize: 12,
+    color: '#999',
   },
   confirmButton: {
     backgroundColor: MAIN_COLOR,
