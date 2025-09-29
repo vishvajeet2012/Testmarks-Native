@@ -6,8 +6,10 @@ import teacherSearchReducer from "../thunk/teacher/teacherSearch";
 import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
 import createClassReducer from "./slice/createClass";
+import createTestReducer from './slice/createTestSlice';
 import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice';
+import teacherDashbordReducer from './slice/teacherDashbordSlice';
 import userReducer from './slice/userSlice';
 
 
@@ -20,6 +22,8 @@ export const store = configureStore({
     classesGetAll: classesgetallReducer,
     createClass: createClassReducer,
     section: sectionReducer,
+    teacherDashbord: teacherDashbordReducer,
+    createTest: createTestReducer,
     teacherSearch: teacherSearchReducer,
     subject: subjectReducer,
     addSectionTeacher: addSectionTeacehr,

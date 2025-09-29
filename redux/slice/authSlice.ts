@@ -92,11 +92,13 @@ export const login = createAsyncThunk<
     });
 
     const { token, user, message } = res.data;
- 
+
+    console.log(res.data,"res.data")
     await AsyncStorage.setItem("token", token);
     return { token, user, message };
 
   } catch (err) {
+    console.log(err,"err")
     const error = err as AxiosError;
     return rejectWithValue(error.message || "Login failed");
   } 
