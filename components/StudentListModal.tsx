@@ -10,11 +10,30 @@ interface Student {
   profilePicture: string;
 }
 
+interface Test {
+  testId: number;
+  testName: string;
+  subjectName: string;
+  dateConducted: string;
+  maxMarks: number;
+  testRank: number | null;
+  createdBy: {
+    teacherId: number;
+    teacherName: string;
+    teacherEmail: string;
+  };
+  studentMarks: any[];
+  totalStudents: number;
+  averageMarks: number;
+}
+
 interface SelectedSection {
   sectionName: string;
   className: string;
   students: Student[];
   studentCount: number;
+  tests?: Test[];
+  viewMode: 'students' | 'tests';
 }
 
 interface StudentListModalProps {
@@ -43,9 +62,17 @@ export default function StudentListModal({
             <ThemedText style={styles.modalTitle}>
               {selectedSection.className} - {selectedSection.sectionName}
             </ThemedText>
-            <ThemedText style={styles.modalSubtitle}>
-              {selectedSection.studentCount} Students
-            </ThemedText>
+            {selectedSection.viewMode === 'students' ? (
+              <ThemedText style={styles.modalSubtitle}>
+                {selectedSection.studentCount} Students
+              </ThemedText>
+            ) : (
+              <ThemedText style={styles.modalSubtitle}>
+                {selectedSection.tests && selectedSection.tests.length > 0
+                  ? `${selectedSection.tests.length} Tests`
+                  : 'No tests currently'}
+              </ThemedText>
+            )}
           </View>
           <TouchableOpacity
             style={styles.closeButton}
@@ -56,29 +83,44 @@ export default function StudentListModal({
         </View>
 
         <ScrollView style={styles.studentList} showsVerticalScrollIndicator={false}>
-          {selectedSection.students.map((student) => (
-            <TouchableOpacity key={student.studentId} style={styles.studentItem}>
-              <View style={styles.studentAvatar}>
-                <ThemedText style={styles.studentAvatarText}>
-                  {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </ThemedText>
-              </View>
-              <View style={styles.studentInfo}>
-                <ThemedText style={styles.studentName}>{student.name}</ThemedText>
-                <ThemedText style={styles.studentDetails}>
-                  Roll: {student.rollNumber} • Email: {student.email}
-                </ThemedText>
-              </View>
-              <View style={styles.studentActions}>
-                <TouchableOpacity style={styles.actionButton}>
-                  <ThemedText style={styles.actionButtonText}>📞</ThemedText>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <ThemedText style={styles.actionButtonText}>📧</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {selectedSection.viewMode === 'students' ? (
+            selectedSection.students.map((student) => (
+              <TouchableOpacity key={student.studentId} style={styles.studentItem}>
+                <View style={styles.studentAvatar}>
+                  <ThemedText style={styles.studentAvatarText}>
+                    {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </ThemedText>
+                </View>
+                <View style={styles.studentInfo}>
+                  <ThemedText style={styles.studentName}>{student.name}</ThemedText>
+                  <ThemedText style={styles.studentDetails}>
+                    Roll: {student.rollNumber} • Email: {student.email}
+                  </ThemedText>
+                </View>
+                <View style={styles.studentActions}>
+                  <TouchableOpacity style={styles.actionButton}>
+                    <ThemedText style={styles.actionButtonText}>📞</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton}>
+                    <ThemedText style={styles.actionButtonText}>📧</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            selectedSection.tests && selectedSection.tests.length > 0 ? (
+              selectedSection.tests.map((test) => (
+                <View key={test.testId} style={styles.testItem}>
+                  <ThemedText style={styles.testName}>{test.testName}</ThemedText>
+                  <ThemedText style={styles.testDetails}>
+                    {test.subjectName} • {new Date(test.dateConducted).toLocaleDateString()} • Max: {test.maxMarks} • Avg: {test.averageMarks}
+                  </ThemedText>
+                </View>
+              ))
+            ) : (
+              <ThemedText style={styles.noTestsText}>No tests currently</ThemedText>
+            )
+          )}
 
           <View style={styles.modalBottomSpacing} />
         </ScrollView>
@@ -186,5 +228,33 @@ const styles = StyleSheet.create({
   },
   modalBottomSpacing: {
     height: 40,
+  },
+  testItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  testName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  testDetails: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  noTestsText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#64748b',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

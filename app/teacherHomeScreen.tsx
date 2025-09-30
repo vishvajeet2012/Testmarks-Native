@@ -9,11 +9,39 @@ import CreateTest from './createTest';
 
 const { width } = Dimensions.get('window');
 
+interface Student {
+  studentId: number;
+  name: string;
+  email: string;
+  rollNumber: string;
+  profilePicture: string;
+}
+
+interface Test {
+  testId: number;
+  testName: string;
+  subjectName: string;
+  dateConducted: string;
+  maxMarks: number;
+  testRank: number | null;
+  createdBy: {
+    teacherId: number;
+    teacherName: string;
+    teacherEmail: string;
+  };
+  studentMarks: any[];
+  totalStudents: number;
+  averageMarks: number;
+}
+
 interface Section {
   sectionId: number;
   sectionName: string;
   studentCount: number;
   isClassTeacher: boolean;
+  students: Student[];
+  tests: Test[];
+  totalTests: number;
 }
 
 interface Subject {
@@ -37,8 +65,19 @@ export default function TeacherHomeScreen() {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   const handleSectionPress = (section: Section, className: string) => {
-    // You can navigate to student list screen here or show modal
-    setSelectedSection({ ...section, className });
+    Alert.alert(
+      'Section Options',
+      `What would you like to do with ${section.sectionName}?`,
+      [
+        { text: 'View Students', onPress: () => openSectionModal(section, className, 'students') },
+        { text: 'View Tests', onPress: () => openSectionModal(section, className, 'tests') },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const openSectionModal = (section: Section, className: string, viewMode: 'students' | 'tests') => {
+    setSelectedSection({ ...section, className, viewMode });
     setShowStudentModal(true);
   };
 
@@ -57,22 +96,20 @@ export default function TeacherHomeScreen() {
   };
 
   const showAllClassStudents = (cls: Class) => {
-    // Combine all students from all sections
-    const allStudents = cls.sections.flatMap(section => 
-      // Mock student data - replace with actual student data from your API
-      Array.from({ length: section.studentCount }, (_, index) => ({
-        id: `${section.sectionId}-${index}`,
-        name: `Student ${index + 1}`,
-        rollNumber: `${section.sectionName}-${String(index + 1).padStart(3, '0')}`,
+    // Combine all students from all sections with section information
+    const allStudents = cls.sections.flatMap(section =>
+      section.students.map(student => ({
+        ...student,
         section: section.sectionName
       }))
     );
-    
-    setSelectedSection({ 
-      sectionName: 'All Sections', 
+
+    setSelectedSection({
+      sectionName: 'All Sections',
       className: cls.className,
       students: allStudents,
-      studentCount: allStudents.length 
+      studentCount: allStudents.length,
+      viewMode: 'students'
     });
     setShowStudentModal(true);
   };
@@ -192,8 +229,8 @@ export default function TeacherHomeScreen() {
 
           <View style={styles.sectionsGrid}>
             {cls.sections.map((sec) => (
-              <TouchableOpacity 
-                key={sec.sectionId} 
+              <TouchableOpacity
+                key={sec.sectionId}
                 style={styles.sectionChip}
                 onPress={() => handleSectionPress(sec, cls.className)}
               >
@@ -508,5 +545,34 @@ const styles = StyleSheet.create({
 
   bottomSpacing: {
     height: 20,
+  },
+
+  // New styles for tests display
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  testsContainer: {
+    marginTop: 8,
+    paddingLeft: 8,
+  },
+  testItem: {
+    marginBottom: 6,
+  },
+  testName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  testDetails: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  noTestsText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: '#64748b',
+    marginTop: 4,
   },
 });

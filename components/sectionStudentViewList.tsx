@@ -141,7 +141,7 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
       <FlatList<Student>
         data={dataStudent || []}
         renderItem={renderStudentCard}
-        keyExtractor={(item: Student) => item.student_id.toString()}
+        keyExtractor={(item: Student) => item?.student_id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={renderSeparator}

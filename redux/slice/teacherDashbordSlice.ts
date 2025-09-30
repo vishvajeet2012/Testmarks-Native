@@ -21,12 +21,33 @@ interface Student {
   profilePicture: string;
 }
 
+interface CreatedBy {
+  teacherId: number;
+  teacherName: string;
+  teacherEmail: string;
+}
+
+interface Test {
+  testId: number;
+  testName: string;
+  subjectName: string;
+  dateConducted: string;
+  maxMarks: number;
+  testRank: number | null;
+  createdBy: CreatedBy;
+  studentMarks: any[];
+  totalStudents: number;
+  averageMarks: number;
+}
+
 interface Section {
   sectionId: number;
   sectionName: string;
   isClassTeacher: boolean;
   studentCount: number;
   students: Student[];
+  tests: Test[];
+  totalTests: number;
 }
 
 interface AssignedClass {
