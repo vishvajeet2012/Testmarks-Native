@@ -134,12 +134,12 @@ export default function SectionStudentView({ dataStudent }: SectionStudentViewPr
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Students List</Text>
         <Text style={styles.headerCount}>
-          {dataStudent?.length || 0} Students
+          {dataStudent?.students.length || 0} Students
         </Text>
       </View>
       
       <FlatList<Student>
-        data={dataStudent || []}
+        data={dataStudent?.students || []}
         renderItem={renderStudentCard}
         keyExtractor={(item: Student) => item?.student_id.toString()}
         showsVerticalScrollIndicator={false}

@@ -33,6 +33,12 @@ export default function AdminHomeScreen() {
     });
   };
 
+    const handleManageTestMarks = () => {
+      setIsMenuOpen(false);
+      animation.setValue(0);
+      router.push("/testManage");
+    };
+
   const handleManageClasses = () => {
     setIsMenuOpen(false);
     animation.setValue(0);
@@ -163,6 +169,26 @@ export default function AdminHomeScreen() {
               <Ionicons name="school" size={20} color="white" />
               <ThemedText style={styles.menuText}>Classes</ThemedText>
             </TouchableOpacity>
+
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.menuItem,
+              {
+                transform: [{ scale: classScale }],
+                bottom: 290,
+                right: 10,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={[styles.menuButton, styles.testMakrsButton]}
+              onPress={handleManageTestMarks}
+            >
+              <Ionicons name="school" size={20} color="white" />
+              <ThemedText style={styles.menuText}>Test Marks</ThemedText>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       )}
@@ -267,6 +293,10 @@ const styles = StyleSheet.create({
   },
   classButton: {
     backgroundColor: "#FF8C00",
+  },
+  testMakrsButton :{
+    backgroundColor: "#32CD32",
+    
   },
   menuText: {
     color: "white",
