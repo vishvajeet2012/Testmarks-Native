@@ -11,6 +11,7 @@ import createTestReducer from './slice/createTestSlice';
 import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice';
 import marksReducer from './slice/marksSlice';
+import studentDashboardReducer from './slice/studentscreen/dashboardSlice';
 import teacherDashbordReducer from './slice/teacherDashbordSlice';
 import testRankingSlice from './slice/testRankingSlice';
 import userReducer from './slice/userSlice';
@@ -32,6 +33,7 @@ export const store = configureStore({
     marks: marksReducer,
     adminTestMarks: adminTestMarksReducer,
     testRanking: testRankingSlice,
+    studentDashboard: studentDashboardReducer,
 
   },
 });
