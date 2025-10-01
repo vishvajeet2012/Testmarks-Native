@@ -12,13 +12,23 @@ import { getStudentDashboard } from '@/thunk/studentscreen/dashboard';
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'approved':
-      return '#10b981'; // Green
+      return '#10b981';
     case 'pending':
     case 'pendingapproval':
-      return '#f59e0b'; // Amber
+      return '#f59e0b';
     default:
-      return '#64748b'; // Gray
+      return '#64748b';
   }
+};
+
+// Helper to check if date is today
+const isToday = (dateString: string) => {
+  const testDate = new Date(dateString);
+  const today = new Date();
+  
+  return testDate.getDate() === today.getDate() &&
+    testDate.getMonth() === today.getMonth() &&
+    testDate.getFullYear() === today.getFullYear();
 };
 
 export default function StudentHomeScreen() {
@@ -30,10 +40,8 @@ export default function StudentHomeScreen() {
   }, [dispatch]);
 
   if (loading) {
-    return (
-      <LoadingScreen/>
-    );
-  }
+    return <LoadingScreen/>;
+  } 
 
   if (error) {
     return (
@@ -86,86 +94,122 @@ export default function StudentHomeScreen() {
         </View>
       </ThemedView>
 
-      {/* Test Sections */}
+      {/* Completed Tests */}
       {data.completed_tests.length > 0 && (
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Completed Tests</ThemedText>
-          {data.completed_tests.map((test) => (
-            <ThemedView key={test.test_id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <ThemedText style={styles.testName}>{test.test_name}</ThemedText>
-                <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
-              </View>
-              <View style={styles.cardBody}>
-                <View style={styles.marksContainer}>
-                  <ThemedText style={styles.marksObtained}>{test.marks_obtained}</ThemedText>
-                  <ThemedText style={styles.maxMarks}>/ {test.max_marks}</ThemedText>
-                </View>
-                {test.test_rank && (
-                  <View style={styles.rankBadge}>
-                    <ThemedText style={styles.rankText}>Rank #{test.test_rank}</ThemedText>
+          {data.completed_tests.map((test) => {
+            const testIsToday = isToday(test.date_conducted);
+            return (
+              <ThemedView key={test.test_id} style={[styles.card, testIsToday && styles.todayCard]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ThemedText style={styles.testName}>{test.test_name}</ThemedText>
+                    {testIsToday && (
+                      <View style={styles.todayBadge}>
+                        <ThemedText style={styles.todayBadgeText}>TODAY</ThemedText>
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-               <ThemedText style={[styles.statusText, { color: getStatusColor(test.status) }]}>
+                  <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
+                </View>
+                <View style={styles.cardBody}>
+                  <View style={styles.marksContainer}>
+                    <ThemedText style={styles.marksObtained}>{test.marks_obtained}</ThemedText>
+                    <ThemedText style={styles.maxMarks}>/ {test.max_marks}</ThemedText>
+                  </View>
+                  {test.test_rank && (
+                    <View style={styles.rankBadge}>
+                      <ThemedText style={styles.rankText}>Rank #{test.test_rank}</ThemedText>
+                    </View>
+                  )}
+                </View>
+                <ThemedText style={[styles.statusText, { color: getStatusColor(test.status) }]}>
                   Status: {test.status}
                 </ThemedText>
-              {test.feedback.length > 0 && (
-                <View style={styles.feedbackSection}>
-                  <ThemedText style={styles.feedbackTitle}>Feedback from {test.teacher.name}:</ThemedText>
-                  {test.feedback.map((fb) => (
-                    <ThemedText key={fb.feedback_id} style={styles.feedbackText}>“{fb.message}”</ThemedText>
-                  ))}
-                </View>
-              )}
-            </ThemedView>
-          ))}
+                {test.feedback.length > 0 && (
+                  <View style={styles.feedbackSection}>
+                    <ThemedText style={styles.feedbackTitle}>Feedback from {test.teacher.name}:</ThemedText>
+                    {test.feedback.map((fb) => (
+                      <ThemedText key={fb.feedback_id} style={styles.feedbackText}>"{fb.message}"</ThemedText>
+                    ))}
+                  </View>
+                )}
+              </ThemedView>
+            );
+          })}
         </View>
       )}
 
+      {/* Pending Tests */}
       {data.pending_tests.length > 0 && (
-         <View style={styles.section}>
+        <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Pending Tests</ThemedText>
-          {data.pending_tests.map((test) => (
-            <ThemedView key={test.test_id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <ThemedText style={styles.testName}>{test.test_name}</ThemedText>
-                <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
-              </View>
-               <View style={styles.cardRow}>
-                <ThemedText style={styles.detailLabel}>Date:</ThemedText>
-                <ThemedText style={styles.detailValue}>{new Date(test.date_conducted).toLocaleDateString()}</ThemedText>
-              </View>
-              <View style={styles.cardRow}>
-                <ThemedText style={styles.detailLabel}>Status:</ThemedText>
-                <ThemedText style={[styles.detailValue, { color: getStatusColor(test.status), fontWeight: 'bold' }]}>
-                  {test.status}
-                </ThemedText>
-              </View>
-            </ThemedView>
-          ))}
+          {data.pending_tests.map((test) => {
+            const testIsToday = isToday(test.date_conducted);
+            return (
+              <ThemedView key={test.test_id} style={[styles.card, testIsToday && styles.todayCard]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <ThemedText style={styles.testName}>{test.test_name}</ThemedText>
+                    {testIsToday && (
+                      <View style={styles.todayBadge}>
+                        <ThemedText style={styles.todayBadgeText}>TODAY</ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
+                </View>
+                <View style={styles.cardRow}>
+                  <ThemedText style={styles.detailLabel}>Date:</ThemedText>
+                  <ThemedText style={[styles.detailValue, testIsToday && { color: '#e11b23', fontWeight: 'bold' }]}>
+                    {testIsToday ? 'Today' : new Date(test.date_conducted).toLocaleDateString()}
+                  </ThemedText>
+                </View>
+                <View style={styles.cardRow}>
+                  <ThemedText style={styles.detailLabel}>Status:</ThemedText>
+                  <ThemedText style={[styles.detailValue, { color: getStatusColor(test.status), fontWeight: 'bold' }]}>
+                    {test.status}
+                  </ThemedText>
+                </View>
+              </ThemedView>
+            );
+          })}
         </View>
       )}
 
+      {/* Upcoming Tests */}
       {data.upcoming_tests.length > 0 && (
         <View style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Upcoming Tests</ThemedText>
-          {data.upcoming_tests.map((test) => (
-             <ThemedView key={test.test_id} style={styles.card}>
+          {data.upcoming_tests.map((test) => {
+            const testIsToday = isToday(test.date_conducted);
+            return (
+              <ThemedView key={test.test_id} style={[styles.card, testIsToday && styles.todayCard]}>
                 <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <ThemedText style={styles.testName}>{test.test_name}</ThemedText>
-                    <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
+                    {testIsToday && (
+                      <View style={styles.todayBadge}>
+                        <ThemedText style={styles.todayBadgeText}>TODAY</ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  <ThemedText style={styles.testSubject}>{test.subject}</ThemedText>
                 </View>
                 <View style={styles.cardRow}>
-                    <ThemedText style={styles.detailLabel}>Scheduled On:</ThemedText>
-                    <ThemedText style={styles.detailValue}>{new Date(test.date_conducted).toLocaleDateString()}</ThemedText>
+                  <ThemedText style={styles.detailLabel}>Scheduled On:</ThemedText>
+                  <ThemedText style={[styles.detailValue, testIsToday && { color: '#e11b23', fontWeight: 'bold' }]}>
+                    {testIsToday ? 'Today' : new Date(test.date_conducted).toLocaleDateString()}
+                  </ThemedText>
                 </View>
-                 <View style={styles.cardRow}>
-                    <ThemedText style={styles.detailLabel}>Max Marks:</ThemedText>
-                    <ThemedText style={styles.detailValue}>{test.max_marks}</ThemedText>
+                <View style={styles.cardRow}>
+                  <ThemedText style={styles.detailLabel}>Max Marks:</ThemedText>
+                  <ThemedText style={styles.detailValue}>{test.max_marks}</ThemedText>
                 </View>
-            </ThemedView>
-          ))}
+              </ThemedView>
+            );
+          })}
         </View>
       )}
       <View style={{ height: 40 }} />
@@ -226,7 +270,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 4,
-    // ThemedView will handle background color
   },
   summaryValue: {
     fontSize: 28,
@@ -242,13 +285,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    // ThemedView handles background color.
-    // Use shadow for depth, which works on both light/dark backgrounds.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
+  },
+  todayCard: {
+    borderWidth: 2,
+    borderColor: '#e11b23',
+  },
+  todayBadge: {
+    backgroundColor: '#e11b23',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  todayBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
   cardHeader: {
     marginBottom: 12,
@@ -282,19 +339,19 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   rankBadge: {
-    backgroundColor: '#fde68a', // A light yellow for rank
+    backgroundColor: '#fde68a',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   rankText: {
-    color: '#ca8a04', // A darker yellow for text
+    color: '#ca8a04',
     fontWeight: 'bold',
   },
   statusText: {
-      fontSize: 14,
-      fontWeight: '500',
-      marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 12,
   },
   cardRow: {
     flexDirection: 'row',
@@ -302,7 +359,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0', // This color will need adjustment for dark mode in ThemedView
+    borderTopColor: '#e2e8f0',
   },
   detailLabel: {
     fontSize: 14,
@@ -316,7 +373,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderColor: '#e2e8f0', // Adjust in ThemedView for dark mode
+    borderColor: '#e2e8f0',
   },
   feedbackTitle: {
     fontSize: 14,
