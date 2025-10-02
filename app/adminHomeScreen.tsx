@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { Animated, Easing, StyleSheet, TouchableOpacity, View } from "react-native";
+import AdminAnalyticsChart from "./AdminAnalyticsChart";
 
 export default function AdminHomeScreen() {
   const params = useLocalSearchParams();
@@ -79,29 +80,9 @@ export default function AdminHomeScreen() {
           <Ionicons name="settings" size={25} color="white" />
         </TouchableOpacity>
       </View>
+      <AdminAnalyticsChart/>
 
-      <View style={styles.content}>
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Ionicons name="people" size={30} color="#4169E1" />
-            <ThemedText style={styles.statNumber}>142</ThemedText>
-            <ThemedText style={styles.statLabel}>Students</ThemedText>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="person" size={30} color="#32CD32" />
-            <ThemedText style={styles.statNumber}>24</ThemedText>
-            <ThemedText style={styles.statLabel}>Teachers</ThemedText>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="school" size={30} color="#FF8C00" />
-            <ThemedText style={styles.statNumber}>18</ThemedText>
-            <ThemedText style={styles.statLabel}>Classes</ThemedText>
-          </View>
-        </View>
-      </View>
-
+      
       <TouchableOpacity
         style={styles.floatingButton}
         onPress={toggleMenu}

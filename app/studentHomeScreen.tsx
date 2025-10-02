@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppDispatch, RootState } from '@/redux/store';
 import { getStudentDashboard } from '@/thunk/studentscreen/dashboard';
+import StudentAnalyticsScreen from './StudentAnalyticsScreen';
 
 // Helper to determine status color
 const getStatusColor = (status: string) => {
@@ -74,7 +75,7 @@ export default function StudentHomeScreen() {
           <Image source={{ uri: data.student.profile_picture }} style={styles.profileImage} />
         )}
       </ThemedView>
-
+<StudentAnalyticsScreen/>
       {/* Summary Section */}
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle" style={styles.sectionTitle}>Summary</ThemedText>
