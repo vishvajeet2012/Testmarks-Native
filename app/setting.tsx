@@ -1,4 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logout } from "@/redux/slice/authSlice";
+import { AppDispatch } from "@/redux/store";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -9,9 +10,11 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useDispatch } from "react-redux";
 
 export default function UserSetting() {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -40,11 +43,8 @@ export default function UserSetting() {
     setIsLoggingOut(true);
     
     try {
-      // Remove token and any other user data
-      await AsyncStorage.removeItem("token");
-      // You might want to remove other user-related data too:
-      // await AsyncStorage.removeItem("userData");
-      // await AsyncStorage.removeItem("userPreferences");
+      // Dispatch logout action to clear Redux state and AsyncStorage
+      await dispatch(logout()).unwrap();
       
       // Navigate to login/home screen
       router.replace("/login");

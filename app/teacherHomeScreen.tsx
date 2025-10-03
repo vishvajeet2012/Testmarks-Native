@@ -3,6 +3,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
 import { getTeacherDashboard } from '@/thunk/teacherScreen/teacherDashbord';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import CreateTest from './createTest';
@@ -63,6 +64,7 @@ export default function TeacherHomeScreen() {
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [showCreateTest, setShowCreateTest] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const router = useRouter();
 
   const handleSectionPress = (section: Section, className: string) => {
     Alert.alert(
@@ -182,6 +184,9 @@ export default function TeacherHomeScreen() {
             {data.teacherDetails.name.split(' ').map(n => n[0]).join('').toUpperCase()}
           </ThemedText>
         </View>
+        <TouchableOpacity onPress={() => router.push('/setting')} style={styles.settingsButton}>
+          <ThemedText style={styles.settingsIcon}>⚙️</ThemedText>
+        </TouchableOpacity>
       </View>
 
       {/* Stats Cards */}
@@ -396,6 +401,18 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 20,
     fontWeight: '600',
+  },
+  settingsButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  settingsIcon: {
+    fontSize: 24,
   },
 
   // Stats Cards

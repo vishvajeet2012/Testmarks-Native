@@ -1,5 +1,6 @@
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 import LoadingScreen from '@/components/Loading';
@@ -34,6 +35,7 @@ const isToday = (dateString: string) => {
 
 export default function StudentHomeScreen() {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { data, loading, error } = useSelector((state: RootState) => state.studentDashboard);
 
   useEffect(() => {
@@ -74,8 +76,11 @@ export default function StudentHomeScreen() {
         {data.student.profile_picture && (
           <Image source={{ uri: data.student.profile_picture }} style={styles.profileImage} />
         )}
+        <TouchableOpacity onPress={() => router.push('/setting')} style={styles.settingsButton}>
+          <ThemedText style={styles.settingsIcon}>⚙️</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
-<StudentAnalyticsScreen/>
+      <StudentAnalyticsScreen/>
       {/* Summary Section */}
       <ThemedView style={styles.section}>
         <ThemedText type="subtitle" style={styles.sectionTitle}>Summary</ThemedText>
@@ -252,6 +257,18 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     borderWidth: 3,
     borderColor: '#e11b23',
+  },
+  settingsButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  settingsIcon: {
+    fontSize: 24,
   },
   section: {
     marginBottom: 24,

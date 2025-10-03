@@ -95,6 +95,7 @@ function RootLayoutContent() {
         <Stack.Screen name="forgetPassowrd" options={{headerShown:false}} />
         
         <Stack.Screen name= "sectionmanagement" options={{headerShown:false}}/>
+        <Stack.Screen name="setting" options={{headerShown:false}}/>
         <Stack.Screen 
 
           name="adminHomeScreen" 
