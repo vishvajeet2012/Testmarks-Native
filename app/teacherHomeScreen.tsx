@@ -1,3 +1,5 @@
+import LoadingScreen from '@/components/Loading';
+import SharedTabLayout from '@/components/SharedTabLayout';
 import StudentListModal from '@/components/StudentListModal';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -122,12 +124,7 @@ export default function TeacherHomeScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.centerContainer}>
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingDot} />
-          <ThemedText style={styles.loadingText}>Loading Dashboard...</ThemedText>
-        </View>
-      </ThemedView>
+    <LoadingScreen/>
     );
   }
 
@@ -170,7 +167,7 @@ export default function TeacherHomeScreen() {
     0
   );
 
-  return (
+  const homeContent = (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header Section */}
       <View style={styles.headerContainer}>
@@ -212,8 +209,8 @@ export default function TeacherHomeScreen() {
       </View>
 
       {data.assignedClasses.map((cls, index) => (
-        <TouchableOpacity 
-          key={cls.classId} 
+        <TouchableOpacity
+          key={cls.classId}
           style={styles.classCard}
           onPress={() => handleClassPress(cls)}
         >
@@ -257,7 +254,12 @@ export default function TeacherHomeScreen() {
       ))}
 
       <View style={styles.bottomSpacing} />
+    </ScrollView>
+  );
 
+  return (
+    <>
+      <SharedTabLayout homeContent={homeContent} />
       <StudentListModal
         visible={showStudentModal}
         onClose={() => setShowStudentModal(false)}
@@ -271,7 +273,7 @@ export default function TeacherHomeScreen() {
           classData={selectedClass}
         />
       )}
-    </ScrollView>
+    </>
   );
 }
 

@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     marginLeft: 44,
   },
   section: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     marginBottom: 24,
   },
   sectionHeader: {
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 6,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

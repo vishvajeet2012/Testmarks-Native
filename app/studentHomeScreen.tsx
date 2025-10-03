@@ -8,6 +8,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { AppDispatch, RootState } from '@/redux/store';
 import { getStudentDashboard } from '@/thunk/studentscreen/dashboard';
+import SharedTabLayout from '../components/SharedTabLayout';
 import StudentAnalyticsScreen from './StudentAnalyticsScreen';
 
 // Helper to determine status color
@@ -62,7 +63,7 @@ export default function StudentHomeScreen() {
     );
   }
 
-  return (
+  const homeContent = (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with Student Info */}
       <ThemedView style={styles.header}>
@@ -221,6 +222,8 @@ export default function StudentHomeScreen() {
       <View style={{ height: 40 }} />
     </ScrollView>
   );
+
+  return <SharedTabLayout homeContent={homeContent} />;
 }
 
 const styles = StyleSheet.create({

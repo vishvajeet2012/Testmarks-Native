@@ -12,6 +12,7 @@ import createTestReducer from './slice/createTestSlice';
 import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice';
 import marksReducer from './slice/marksSlice';
+import notificationReducer from './slice/notificationSlice';
 import studentDashboardReducer from './slice/studentscreen/dashboardSlice';
 import studentAnalyticsReducer from './slice/studentscreen/studentAnalyticsSlice';
 import teacherDashbordReducer from './slice/teacherDashbordSlice';
@@ -40,6 +41,7 @@ export const store = configureStore({
     adminAnalytics: adminAnalyticsReducer,
 
     studentAnalytics: studentAnalyticsReducer,
+    notifications: notificationReducer,
   },
 });
 

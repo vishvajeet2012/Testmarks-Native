@@ -1,3 +1,4 @@
+import SharedTabLayout from "@/components/SharedTabLayout";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Ionicons } from "@expo/vector-icons";
@@ -70,7 +71,7 @@ export default function AdminHomeScreen() {
     outputRange: ["0deg", "45deg"],
   });
 
-  return (
+  const homeContent = (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
         <ThemedText style={styles.headerText} type="title">
@@ -175,6 +176,8 @@ export default function AdminHomeScreen() {
       )}
     </ThemedView>
   );
+
+  return <SharedTabLayout homeContent={homeContent} />;
 }
 
 const styles = StyleSheet.create({
@@ -229,7 +232,7 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: "absolute",
     right: 20,
-    bottom: 20,
+    bottom: 10,
     width: 60,
     height: 60,
     borderRadius: 30,
