@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import io from 'socket.io-client';
-import { Notification_URL } from '../../utils/baseUrl';
+import { Notification_URL, Serverurl } from '../../utils/baseUrl';
 
 export interface Notification {
   notification_id: number;
@@ -74,8 +74,7 @@ export const deleteNotification = createAsyncThunk<
     return { notification_id };
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.error || error.message);
-  }
-});
+  }});
 
 // Socket.io client setup and event handling
 let socket: any = null;
@@ -85,7 +84,7 @@ export const initializeSocket = async (dispatch: any) => {
 
   const token = await AsyncStorage.getItem('token');
 
-  socket = io("https://serversql-brown.vercel.app", {
+  socket = io(Serverurl, {
     transports: ['websocket'],
     auth: { token },
   });
