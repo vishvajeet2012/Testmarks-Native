@@ -39,7 +39,7 @@ export const markNotificationRead = createAsyncThunk<
     const config = {
       headers: { Authorization: `Bearer ${token}` },
     };
-    await axios.put(`${Notification_URL}/${notification_id}/read`, {}, config);
+    await axios.post(`${Notification_URL}/notification_id/read`, { notification_id }, config);
     return { notification_id };
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.error || error.message);
@@ -65,14 +65,18 @@ export const deleteNotification = createAsyncThunk<
   { notification_id: number },
   number
 >('notifications/deleteNotification', async (notification_id, { rejectWithValue }) => {
+  console.log('deleteNotification thunk called with id:', notification_id);
   try {
     const token = await AsyncStorage.getItem('token');
     const config = {
       headers: { Authorization: `Bearer ${token}` },
     };
-    await axios.delete(`${Notification_URL}/${notification_id}`, config);
+    console.log('Sending delete request to:', `${Notification_URL}/notification_id`, 'with body:', { notification_id });
+    const response = await axios.post(`${Notification_URL}/notification_id`, { notification_id }, config);
+    console.log('Delete response:', response.data);
     return { notification_id };
   } catch (error: any) {
+    console.error('Delete error:', error);
     return rejectWithValue(error.response?.data?.error || error.message);
   }});
 

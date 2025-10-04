@@ -12,14 +12,17 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 
+
 export default function UserSetting() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+
   const handleLogout = async () => {
     // Prevent multiple logout attempts
     if (isLoggingOut) return;
+
 
     // Show confirmation dialog
     Alert.alert(
@@ -39,14 +42,17 @@ export default function UserSetting() {
     );
   };
 
+
   const performLogout = async () => {
     setIsLoggingOut(true);
     
     try {
-      // Dispatch logout action to clear Redux state and AsyncStorage
       await dispatch(logout()).unwrap();
       
-      // Navigate to login/home screen
+      // Clear all screens from the navigation stack
+      router.dismissAll();
+      
+      // Navigate to login screen
       router.replace("/login");
       
     } catch (error) {
@@ -64,14 +70,17 @@ export default function UserSetting() {
     }
   };
 
+
   const handleProfile = () => {
     // Navigate to profile screen
-    console.log("comming soon")
-};
+    console.log("coming soon");
+  };
+
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
+
 
       <TouchableOpacity 
         style={styles.option} 
@@ -80,6 +89,7 @@ export default function UserSetting() {
       >
         <Text style={styles.optionText}>Profile</Text>
       </TouchableOpacity>
+
 
       <TouchableOpacity 
         style={[styles.option, styles.logout]} 
@@ -103,6 +113,7 @@ export default function UserSetting() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { 

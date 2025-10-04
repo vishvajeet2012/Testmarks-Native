@@ -91,6 +91,69 @@ const response = await axios.post(
 
 
 
+export const savePushToken = createAsyncThunk<
+  { message: string },
+  string,
+  { rejectValue: string }
+>("user/savePushToken", async (pushToken, { rejectWithValue }) => {
+  try {
+    const savedToken = await AsyncStorage.getItem("token");
+    if (!savedToken) {
+      return rejectWithValue("No authentication token found");
+    }
+
+    const response = await axios.post(
+      `${USER_URL}/save-push-token`,
+      { pushToken },
+      {
+        headers: {
+          Authorization: `Bearer ${savedToken}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<{ message: string }>;
+      return rejectWithValue(axiosError.response?.data?.message || axiosError.message || "Failed to save push token");
+    }
+    return rejectWithValue("An unexpected error occurred");
+  }
+});
+
+export const removePushToken = createAsyncThunk<
+  { message: string },
+  void,
+  { rejectValue: string }
+>("user/removePushToken", async (_, { rejectWithValue }) => {
+  try {
+    const savedToken = await AsyncStorage.getItem("token");
+    if (!savedToken) {
+      return rejectWithValue("No authentication token found");
+    }
+
+    const response = await axios.delete(
+      `${USER_URL}/remove-push-token`,
+      {
+        headers: {
+          Authorization: `Bearer ${savedToken}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<{ message: string }>;
+      return rejectWithValue(axiosError.response?.data?.message || axiosError.message || "Failed to remove push token");
+    }
+    return rejectWithValue("An unexpected error occurred");
+  }
+});
+
 export const selectManageUserLoading = (state: { manageUser: ManageUserState }) => state.manageUser.loading;
 export const selectManageUserSuccess = (state: { manageUser: ManageUserState }) => state.manageUser.success;
 export const selectManageUserError = (state: { manageUser: ManageUserState }) => state.manageUser.error;
