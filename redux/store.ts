@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import auditLogReducer from '../redux/slice/admin/auditLogSlice';
 import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
 import addSectionTeacehr from '../thunk/section/addSectionTeacher';
 import subjectReducer from '../thunk/subject/searchSubject';
@@ -9,6 +10,7 @@ import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
 import createClassReducer from "./slice/createClass";
 import createTestReducer from './slice/createTestSlice';
+import feedbackReducer from './slice/feedbackSlice';
 import classesgetallReducer from './slice/getAllClassbysection';
 import { manageUserReducer } from './slice/manageuserSlice';
 import marksReducer from './slice/marksSlice';
@@ -18,7 +20,6 @@ import studentAnalyticsReducer from './slice/studentscreen/studentAnalyticsSlice
 import teacherDashbordReducer from './slice/teacherDashbordSlice';
 import testRankingSlice from './slice/testRankingSlice';
 import userReducer from './slice/userSlice';
-
 
 export const store = configureStore({
   reducer: {
@@ -39,9 +40,11 @@ export const store = configureStore({
     testRanking: testRankingSlice,
     studentDashboard: studentDashboardReducer,
     adminAnalytics: adminAnalyticsReducer,
+    auditLog: auditLogReducer,
 
     studentAnalytics: studentAnalyticsReducer,
     notifications: notificationReducer,
+    feedback: feedbackReducer,
   },
 });
 

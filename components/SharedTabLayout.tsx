@@ -3,8 +3,10 @@ import { ThemedView } from '@/components/ThemedView';
 import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { deleteNotification, fetchNotifications, markNotificationRead } from '@/thunk/NotificationService/notifcationThunk';
+import { getAuditLogs } from '@/thunk/admin/auditLog';
+import { getMyAllFeedbacks, getTestFeedbacks, replyToFeedback } from '@/thunk/feedback/feedbackThunk';
 import React, { useEffect, useState } from 'react';
-import { Alert, FlatList, Platform, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Platform, RefreshControl, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path, SvgProps } from 'react-native-svg';
 
 interface SharedTabLayoutProps {
@@ -422,7 +424,7 @@ function NotificationScreen() {
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={(item) => (item.notification_id ? item.notification_id.toString() : Math.random().toString())}
+          keyExtractor={(item) => (item?.notification_id ? item.notification_id?.toString() : Math.random().toString())}
           renderItem={renderNotification}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -439,51 +441,499 @@ function NotificationScreen() {
   );
 }
 
-function FeedbackScreen() {
+function StudentFeedbackScreen() {
+  const dispatch = useAppDispatch();
+  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
   const colorScheme = useColorScheme();
-  
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    dispatch(getMyAllFeedbacks());
+  }, [dispatch]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await dispatch(getMyAllFeedbacks());
+    setRefreshing(false);
+  }, [dispatch]);
+
+  const renderFeedbackItem = ({ item }: { item: any }) => (
+    <ThemedView style={styles.feedbackItem}>
+      <View style={styles.feedbackItemHeader}>
+        <ThemedText style={styles.feedbackTestName}>{item.test_name}</ThemedText>
+        <ThemedText style={styles.feedbackDate}>
+          {new Date(item.created_at).toLocaleDateString()}
+        </ThemedText>
+      </View>
+      <ThemedText style={styles.feedbackMessage}>{item.message}</ThemedText>
+      {item.teacher_reply && (
+        <View style={styles.teacherReply}>
+          <ThemedText style={styles.replyLabel}>Teacher's Reply:</ThemedText>
+          <ThemedText style={styles.replyMessage}>{item.teacher_reply}</ThemedText>
+        </View>
+      )}
+    </ThemedView>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <ThemedView style={styles.center}>
+        <View style={styles.loadingContainer}>
+          <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
+          <ThemedText style={styles.loadingText}>Loading your feedback...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.feedbackContainer}>
       <View style={styles.feedbackHeader}>
         <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
-        <ThemedText type="title" style={styles.feedbackTitle}>Feedback</ThemedText>
-        <ThemedText style={styles.feedbackSubtitle}>We'd love to hear from you!</ThemedText>
+        <ThemedText type="title" style={styles.feedbackTitle}>My Feedback</ThemedText>
+        <ThemedText style={styles.feedbackSubtitle}>View feedback from your teachers</ThemedText>
       </View>
-      
-      <View style={styles.feedbackContent}>
-        <TouchableOpacity style={styles.feedbackOption}>
-          <View style={styles.feedbackOptionIcon}>
-            <PencilIcon size={24} color={CustomColors[colorScheme ?? 'light'].tint} />
-          </View>
-          <View style={styles.feedbackOptionText}>
-            <ThemedText style={styles.feedbackOptionTitle}>Send Feedback</ThemedText>
-            <ThemedText style={styles.feedbackOptionDescription}>Share your suggestions and ideas</ThemedText>
-          </View>
-          <ChevronRightIcon size={20} color="#8E8E93" />
-        </TouchableOpacity>
 
-        <TouchableOpacity style={styles.feedbackOption}>
-          <View style={styles.feedbackOptionIcon}>
-            <StarIcon size={24} color={CustomColors[colorScheme ?? 'light'].tint} filled={false} />
-          </View>
-          <View style={styles.feedbackOptionText}>
-            <ThemedText style={styles.feedbackOptionTitle}>Rate App</ThemedText>
-            <ThemedText style={styles.feedbackOptionDescription}>Rate us on the app store</ThemedText>
-          </View>
-          <ChevronRightIcon size={20} color="#8E8E93" />
-        </TouchableOpacity>
+      {feedbacks.length === 0 ? (
+        <ThemedView style={styles.emptyState}>
+          <StarIcon size={64} color="#C7C7CC" filled={false} />
+          <ThemedText type="subtitle" style={styles.emptyStateTitle}>
+            No feedback yet
+          </ThemedText>
+          <ThemedText style={styles.emptyStateText}>
+            Your feedback from teachers will appear here
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={feedbacks}
+          keyExtractor={(item) => item?.feedback_id?.toString()}
+          renderItem={renderFeedbackItem}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={CustomColors[colorScheme ?? 'light'].tint}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
+    </ThemedView>
+  );
+}
 
-        <TouchableOpacity style={styles.feedbackOption}>
-          <View style={styles.feedbackOptionIcon}>
-            <QuestionIcon size={24} color={CustomColors[colorScheme ?? 'light'].tint} />
-          </View>
-          <View style={styles.feedbackOptionText}>
-            <ThemedText style={styles.feedbackOptionTitle}>Help & Support</ThemedText>
-            <ThemedText style={styles.feedbackOptionDescription}>Get help with any issues</ThemedText>
-          </View>
-          <ChevronRightIcon size={20} color="#8E8E93" />
-        </TouchableOpacity>
+function TeacherFeedbackScreen() {
+  const dispatch = useAppDispatch();
+  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
+  const colorScheme = useColorScheme();
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+  const [replyText, setReplyText] = useState('');
+
+  useEffect(() => {
+    dispatch(getTestFeedbacks());
+  }, [dispatch]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await dispatch(getTestFeedbacks());
+    setRefreshing(false);
+  }, [dispatch]);
+
+  const handleReply = (feedback: any) => {
+    setSelectedFeedback(feedback);
+    setReplyText('');
+  };
+
+  const submitReply = () => {
+    if (selectedFeedback && replyText.trim()) {
+      dispatch(replyToFeedback({
+        feedback_id: selectedFeedback.feedback_id,
+        message: replyText.trim()
+      }));
+      setSelectedFeedback(null);
+      setReplyText('');
+    }
+  };
+
+  const renderFeedbackItem = ({ item }: { item: any }) => (
+    <ThemedView style={styles.feedbackItem}>
+      <View style={styles.feedbackItemHeader}>
+        <View>
+          <ThemedText style={styles.feedbackTestName}>{item.test_name}</ThemedText>
+          <ThemedText style={styles.feedbackStudentName}>Student: {item.student_name}</ThemedText>
+        </View>
+        <ThemedText style={styles.feedbackDate}>
+          {new Date(item.created_at).toLocaleDateString()}
+        </ThemedText>
       </View>
+      <ThemedText style={styles.feedbackMessage}>{item.message}</ThemedText>
+      {item.teacher_reply ? (
+        <View style={styles.teacherReply}>
+          <ThemedText style={styles.replyLabel}>Your Reply:</ThemedText>
+          <ThemedText style={styles.replyMessage}>{item.teacher_reply}</ThemedText>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.replyButton}
+          onPress={() => handleReply(item)}
+        >
+          <PencilIcon size={16} color="#fff" />
+          <ThemedText style={styles.replyButtonText}>Reply</ThemedText>
+        </TouchableOpacity>
+      )}
+    </ThemedView>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <ThemedView style={styles.center}>
+        <View style={styles.loadingContainer}>
+          <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
+          <ThemedText style={styles.loadingText}>Loading feedback...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.feedbackContainer}>
+      <View style={styles.feedbackHeader}>
+        <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
+        <ThemedText type="title" style={styles.feedbackTitle}>Student Feedback</ThemedText>
+        <ThemedText style={styles.feedbackSubtitle}>View and reply to student feedback</ThemedText>
+      </View>
+
+      {feedbacks.length === 0 ? (
+        <ThemedView style={styles.emptyState}>
+          <StarIcon size={64} color="#C7C7CC" filled={false} />
+          <ThemedText type="subtitle" style={styles.emptyStateTitle}>
+            No feedback yet
+          </ThemedText>
+          <ThemedText style={styles.emptyStateText}>
+            Student feedback will appear here
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={feedbacks}
+          keyExtractor={(item) => item?.feedback_id?.toString()}
+          renderItem={renderFeedbackItem}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={CustomColors[colorScheme ?? 'light'].tint}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
+
+      {selectedFeedback && (
+        <View style={styles.replyModal}>
+          <View style={styles.replyModalContent}>
+            <ThemedText style={styles.replyModalTitle}>Reply to Feedback</ThemedText>
+            <ThemedText style={styles.replyModalSubtitle}>
+              {selectedFeedback.student_name} - {selectedFeedback.test_name}
+            </ThemedText>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Type your reply..."
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              numberOfLines={4}
+            />
+            <View style={styles.replyModalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setSelectedFeedback(null)}
+              >
+                <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={submitReply}
+              >
+                <ThemedText style={styles.submitButtonText}>Submit Reply</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+    </ThemedView>
+  );
+}
+
+function AdminFeedbackScreen() {
+  const dispatch = useAppDispatch();
+  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
+  const colorScheme = useColorScheme();
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
+  const [replyText, setReplyText] = useState('');
+
+  useEffect(() => {
+    dispatch(getTestFeedbacks());
+  }, [dispatch]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await dispatch(getTestFeedbacks());
+    setRefreshing(false);
+  }, [dispatch]);
+
+  const handleReply = (feedback: any) => {
+    setSelectedFeedback(feedback);
+    setReplyText('');
+  };
+
+  const submitReply = () => {
+    if (selectedFeedback && replyText.trim()) {
+      dispatch(replyToFeedback({
+        feedback_id: selectedFeedback.feedback_id,
+        message: replyText.trim()
+      }));
+      setSelectedFeedback(null);
+      setReplyText('');
+    }
+  };
+
+  const renderFeedbackItem = ({ item }: { item: any }) => (
+    <ThemedView style={styles.feedbackItem}>
+      <View style={styles.feedbackItemHeader}>
+        <View>
+          <ThemedText style={styles.feedbackTestName}>{item.test_name}</ThemedText>
+          <ThemedText style={styles.feedbackStudentName}>Student: {item.student_name}</ThemedText>
+          <ThemedText style={styles.feedbackTeacherName}>Teacher: {item.teacher_name}</ThemedText>
+        </View>
+        <ThemedText style={styles.feedbackDate}>
+          {new Date(item.created_at).toLocaleDateString()}
+        </ThemedText>
+      </View>
+      <ThemedText style={styles.feedbackMessage}>{item.message}</ThemedText>
+      {item.teacher_reply ? (
+        <View style={styles.teacherReply}>
+          <ThemedText style={styles.replyLabel}>Teacher's Reply:</ThemedText>
+          <ThemedText style={styles.replyMessage}>{item.teacher_reply}</ThemedText>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.replyButton}
+          onPress={() => handleReply(item)}
+        >
+          <PencilIcon size={16} color="#fff" />
+          <ThemedText style={styles.replyButtonText}>Reply as Admin</ThemedText>
+        </TouchableOpacity>
+      )}
+    </ThemedView>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <ThemedView style={styles.center}>
+        <View style={styles.loadingContainer}>
+          <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
+          <ThemedText style={styles.loadingText}>Loading all feedback...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.feedbackContainer}>
+      <View style={styles.feedbackHeader}>
+        <StarIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} filled={true} />
+        <ThemedText type="title" style={styles.feedbackTitle}>All Feedback</ThemedText>
+        <ThemedText style={styles.feedbackSubtitle}>Manage all student feedback</ThemedText>
+      </View>
+
+      {feedbacks.length === 0 ? (
+        <ThemedView style={styles.emptyState}>
+          <StarIcon size={64} color="#C7C7CC" filled={false} />
+          <ThemedText type="subtitle" style={styles.emptyStateTitle}>
+            No feedback yet
+          </ThemedText>
+          <ThemedText style={styles.emptyStateText}>
+            All student feedback will appear here
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={feedbacks}
+          keyExtractor={(item) => item?.feedback_id?.toString()}
+          renderItem={renderFeedbackItem}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={CustomColors[colorScheme ?? 'light'].tint}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
+
+      {selectedFeedback && (
+        <View style={styles.replyModal}>
+          <View style={styles.replyModalContent}>
+            <ThemedText style={styles.replyModalTitle}>Reply to Feedback (Admin)</ThemedText>
+            <ThemedText style={styles.replyModalSubtitle}>
+              {selectedFeedback.student_name} - {selectedFeedback.test_name}
+            </ThemedText>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Type your reply..."
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              numberOfLines={4}
+            />
+            <View style={styles.replyModalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setSelectedFeedback(null)}
+              >
+                <ThemedText style={styles.cancelButtonText}>Cancel</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={submitReply}
+              >
+                <ThemedText style={styles.submitButtonText}>Submit Reply</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+    </ThemedView>
+  );
+}
+
+function FeedbackScreen() {
+  const { user } = useAppSelector((state: any) => state.auth);
+
+  if (!user || !user.role) {
+    return (
+      <ThemedView style={styles.center}>
+        <ThemedText type="subtitle">Unable to determine user role</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  switch (user.role) {
+    case 'Student':
+      return <StudentFeedbackScreen />;
+    case 'Teacher':
+      return <TeacherFeedbackScreen />;
+    case 'Admin':
+      return <AdminFeedbackScreen />;
+    default:
+      return (
+        <ThemedView style={styles.center}>
+          <ThemedText type="subtitle">Invalid user role</ThemedText>
+        </ThemedView>
+      );
+  }
+}
+
+function AuditLogScreen() {
+  const dispatch = useAppDispatch();
+  const { data: auditLogs, loading, error } = useAppSelector((state: any) => state.auditLog);
+  const colorScheme = useColorScheme();
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    dispatch(getAuditLogs());
+  }, [dispatch]);
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    await dispatch(getAuditLogs());
+    setRefreshing(false);
+  }, [dispatch]);
+
+  const renderAuditLogItem = ({ item }: { item: any }) => (
+    <ThemedView style={styles.auditLogItem}>
+      <View style={styles.auditLogItemHeader}>
+        <ThemedText style={styles.auditLogAction}>{item.action}</ThemedText>
+        <ThemedText style={styles.auditLogDate}>
+          {new Date(item.timestamp).toLocaleString()}
+        </ThemedText>
+      </View>
+      <ThemedText style={styles.auditLogUser}>User: {item.user_name} ({item.user_role})</ThemedText>
+      <ThemedText style={styles.auditLogDetails}>{item.remarks}</ThemedText>
+      {item.ip_address && (
+        <ThemedText style={styles.auditLogIP}>IP: {item.ip_address}</ThemedText>
+      )}
+    </ThemedView>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <ThemedView style={styles.center}>
+        <View style={styles.loadingContainer}>
+          <InfoIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} />
+          <ThemedText style={styles.loadingText}>Loading audit logs...</ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.center}>
+        <View style={styles.errorContainer}>
+          <TriangleAlertIcon size={48} color="#e11b23" />
+          <ThemedText type="subtitle" style={styles.errorTitle}>Unable to load audit logs</ThemedText>
+          <ThemedText style={styles.errorText}>{error}</ThemedText>
+          <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(getAuditLogs())}>
+            <ThemedText style={styles.retryButtonText}>Try Again</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.auditLogContainer}>
+      <View style={styles.auditLogHeader}>
+        <InfoIcon size={48} color={CustomColors[colorScheme ?? 'light'].tint} />
+        <ThemedText type="title" style={styles.auditLogTitle}>Audit Logs</ThemedText>
+        <ThemedText style={styles.auditLogSubtitle}>View system activity logs</ThemedText>
+      </View>
+
+      {auditLogs.length === 0 ? (
+        <ThemedView style={styles.emptyState}>
+          <InfoIcon size={64} color="#C7C7CC" />
+          <ThemedText type="subtitle" style={styles.emptyStateTitle}>
+            No audit logs yet
+          </ThemedText>
+          <ThemedText style={styles.emptyStateText}>
+            System activity will appear here
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        <FlatList
+          data={auditLogs}
+          keyExtractor={(item) => item?.log_id?.toString()}
+          renderItem={renderAuditLogItem}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={CustomColors[colorScheme ?? 'light'].tint}
+            />
+          }
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </ThemedView>
   );
 }
@@ -511,6 +961,8 @@ const TabButton = ({
         return <BellIcon size={24} color={iconColor} />;
       case 'star.fill':
         return <StarIcon size={24} color={iconColor} filled={true} />;
+      case 'info.circle.fill':
+        return <InfoIcon size={24} color={iconColor} />;
       default:
         return <HomeIcon size={24} color={iconColor} />;
     }
@@ -552,6 +1004,7 @@ export default function SharedTabLayout({ homeContent }: SharedTabLayoutProps) {
   const colorScheme = useColorScheme();
   const [selectedTab, setSelectedTab] = useState('Home');
   const { unreadCount } = useAppSelector((state: any) => state.notifications);
+  const { user } = useAppSelector((state: any) => state.auth);
 
   const renderContent = () => {
     switch (selectedTab) {
@@ -561,16 +1014,20 @@ export default function SharedTabLayout({ homeContent }: SharedTabLayoutProps) {
         return <NotificationScreen />;
       case 'Feedback':
         return <FeedbackScreen />;
+      case 'AuditLog':
+        return <AuditLogScreen />;
       default:
         return homeContent;
     }
   };
 
-  const tabs = [
+  const baseTabs = [
     { name: 'Home', icon: 'house.fill' },
     { name: 'Notification', icon: 'bell.fill' },
     { name: 'Feedback', icon: 'star.fill' },
   ];
+
+  const tabs = user?.role === 'Admin' ? [...baseTabs, { name: 'AuditLog', icon: 'info.circle.fill' }] : baseTabs;
 
   return (
     <ThemedView style={styles.container}>
@@ -874,5 +1331,189 @@ const styles = StyleSheet.create({
   feedbackOptionDescription: {
     fontSize: 14,
     opacity: 0.7,
+  },
+  feedbackItem: {
+    backgroundColor: 'rgba(118, 118, 128, 0.12)',
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+  },
+  feedbackItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  feedbackTestName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  feedbackStudentName: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  feedbackTeacherName: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  feedbackDate: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  feedbackMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  teacherReply: {
+    backgroundColor: 'rgba(225, 27, 35, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#e11b23',
+  },
+  replyLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#e11b23',
+    marginBottom: 4,
+  },
+  replyMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e11b23',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 6,
+  },
+  replyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  replyModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  replyModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+    maxWidth: 400,
+  },
+  replyModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  replyModalSubtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  replyInput: {
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  replyModalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f2f2f7',
+  },
+  cancelButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  submitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#e11b23',
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  auditLogContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  auditLogHeader: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  auditLogTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  auditLogSubtitle: {
+    fontSize: 16,
+    opacity: 0.7,
+    textAlign: 'center',
+  },
+  auditLogItem: {
+    backgroundColor: 'rgba(118, 118, 128, 0.12)',
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+  },
+  auditLogItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  auditLogAction: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  auditLogDate: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  auditLogUser: {
+    fontSize: 14,
+    opacity: 0.8,
+    marginBottom: 8,
+  },
+  auditLogDetails: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  auditLogIP: {
+    fontSize: 12,
+    opacity: 0.6,
   },
 });
