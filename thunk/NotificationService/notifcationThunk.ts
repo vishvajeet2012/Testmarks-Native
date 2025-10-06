@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import io from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { Notification_URL, Serverurl } from '../../utils/baseUrl';
 
 export interface Notification {
@@ -65,54 +65,143 @@ export const deleteNotification = createAsyncThunk<
   { notification_id: number },
   number
 >('notifications/deleteNotification', async (notification_id, { rejectWithValue }) => {
-  console.log('deleteNotification thunk called with id:', notification_id);
   try {
     const token = await AsyncStorage.getItem('token');
     const config = {
       headers: { Authorization: `Bearer ${token}` },
     };
-    console.log('Sending delete request to:', `${Notification_URL}/notification_id`, 'with body:', { notification_id });
     const response = await axios.post(`${Notification_URL}/notification_id`, { notification_id }, config);
-    console.log('Delete response:', response.data);
     return { notification_id };
   } catch (error: any) {
-    console.error('Delete error:', error);
     return rejectWithValue(error.response?.data?.error || error.message);
-  }});
+  }
+});
 
-// Socket.io client setup and event handling
-let socket: any = null;
+// Socket.io client setup - FIXED FOR RENDER.COM HTTPS
+let socket: Socket | null = null;
 
 export const initializeSocket = async (dispatch: any) => {
-  if (socket) return; // already initialized
+  try {
+    // Prevent multiple connections
+    if (socket?.connected) {
+      console.log('Socket already connected');
+      return socket;
+    }
 
-  const token = await AsyncStorage.getItem('token');
+    // Get token
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      console.log('No token available, skipping socket connection');
+      return null;
+    }
 
-  socket = io(Serverurl, {
-    transports: ['websocket'],
-    auth: { token },
-  });
+    console.log('Initializing socket connection to:', Serverurl);
 
-  socket.on('connect', () => {
-    console.log('Socket connected:', socket.id);
-  });
+    // Disconnect existing socket if any
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
 
-  socket.on('new_notification', (notification: Notification) => {
-    dispatch({ type: 'notifications/addNotification', payload: notification });
-  });
+    // Create new socket connection - CRITICAL FIX FOR RENDER
+    socket = io(Serverurl, {
+      // Key changes for Render.com HTTPS/WSS
+      transports: ['websocket', 'polling'], // Allow fallback to polling
+      secure: true, // Force secure connection (wss://)
+      rejectUnauthorized: false, // Allow self-signed certs (remove in production if using valid SSL)
+      
+      // Reconnection settings
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 10, // Increased for production
+      
+      // Authentication
+      auth: {
+        token: token,
+      },
+      
+      // Timeout settings
+      timeout: 20000,
+    });
 
-  socket.on('connect_error', (err: any) => {
-    console.error('Socket error:', err);
-  });
+    // Connection success
+    socket.on('connect', () => {
+      console.log('✅ Socket connected successfully:', socket?.id);
+      console.log('Transport used:', socket?.io?.engine?.transport?.name);
+    });
 
-  socket.on('disconnect', () => {
-    console.log('Socket disconnected');
-  });
+    // New notification received
+    socket.on('new_notification', (notification: Notification) => {
+      console.log('📬 New notification received:', notification);
+      dispatch({ type: 'notifications/addNotification', payload: notification });
+    });
+
+    // Notification marked as read
+    socket.on('notification_marked_read', (data: { notification_id: number }) => {
+      console.log('✓ Notification marked as read:', data.notification_id);
+    });
+
+    // Connection error
+    socket.on('connect_error', async (err: any) => {
+      console.error('❌ Socket connection error:', err.message);
+      console.error('Error details:', {
+        message: err.message,
+        description: err.description,
+        type: err.type,
+      });
+      
+      // Try to refresh token if auth error
+      if (err.message.includes('Authentication') || err.message.includes('auth')) {
+        console.log('Attempting to refresh token...');
+        const newToken = await AsyncStorage.getItem('token');
+        if (newToken && socket) {
+          socket.auth = { token: newToken };
+          socket.connect();
+        }
+      }
+    });
+
+    // Disconnection
+    socket.on('disconnect', (reason: string) => {
+      console.log('🔌 Socket disconnected:', reason);
+      
+      // Auto-reconnect on unexpected disconnect
+      if (reason === 'io server disconnect') {
+        console.log('Server disconnected, attempting to reconnect...');
+        socket?.connect();
+      }
+    });
+
+    // Reconnection attempt
+    socket.on('reconnect_attempt', (attemptNumber: number) => {
+      console.log(`🔄 Reconnection attempt ${attemptNumber}...`);
+    });
+
+    // Reconnection success
+    socket.on('reconnect', (attemptNumber: number) => {
+      console.log(`✅ Reconnected after ${attemptNumber} attempts`);
+    });
+
+    // Reconnection failed
+    socket.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed after all attempts');
+    });
+
+    return socket;
+  } catch (error) {
+    console.error('Socket initialization error:', error);
+    return null;
+  }
 };
 
 export const disconnectSocket = () => {
   if (socket) {
+    console.log('Disconnecting socket...');
     socket.disconnect();
     socket = null;
   }
 };
+
+export const getSocket = () => socket;
