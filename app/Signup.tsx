@@ -117,8 +117,13 @@ export default function SignupScreen() {
     if (message) {
       Alert.alert('Success', message);
     }
-    
   }, [message]);
+
+  useEffect(() => {
+    if (registerError) {
+      Alert.alert('Error', getErrorMessage(registerError));
+    }
+  }, [registerError]);
 
   const getErrorMessage = (error: string): string => {
     if (error === "Request failed with status code 409") {

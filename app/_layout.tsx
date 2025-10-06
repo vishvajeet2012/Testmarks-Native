@@ -1,20 +1,16 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
-import { Provider, useSelector } from 'react-redux';
-
 import LoadingScreen from '@/components/Loading';
 import { useAppDispatch } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { loadToken } from '@/redux/slice/authSlice';
 import { store } from '@/redux/store';
-import { savePushToken } from '@/thunk/user/userMange';
-import { disconnectSocket, initializeSocket } from '../thunk/NotificationService/notifcationThunk';
-
+import NotificationService from '@/services/NotificationService'; // ✅ Import Firebase service
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
+import { Provider, useSelector } from 'react-redux';
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
@@ -24,13 +20,23 @@ function RootLayoutContent() {
   const router = useRouter();
   const segments = useSegments();
   
-  // Refs to prevent multiple initializations
-  const socketInitializedRef = useRef(false);
-  const pushTokenRegisteredRef = useRef(false);
   const navigationHandledRef = useRef(false);
+  const fcmInitializedRef = useRef(false); // ✅ Track FCM initialization
 
   const authState = useSelector((state: any) => state.auth);
-  const { token, user, isLoading } = authState;
+  const { token, user, isLoading, getMeError } = authState;
+
+  // ✅ Initialize Firebase FCM on app start
+  useEffect(() => {
+    const initializeFirebase = async () => {
+      if (!fcmInitializedRef.current) {
+        fcmInitializedRef.current = true;
+        await NotificationService.initialize();
+      }
+    };
+
+    initializeFirebase();
+  }, []);
 
   // Initialize auth on mount
   useEffect(() => {
@@ -58,42 +64,6 @@ function RootLayoutContent() {
     };
   }, [dispatch]);
 
-  // Register for push notifications
-  const registerForPushNotificationsAsync = async () => {
-    if (Platform.OS === 'web') {
-      console.log('Push notifications not supported on web');
-      return;
-    }
-
-    if (pushTokenRegisteredRef.current) {
-      return;
-    }
-
-    try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        console.log('Push notification permission denied');
-        return;
-      }
-
-      const pushToken = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log('Expo push token:', pushToken);
-
-      await dispatch(savePushToken(pushToken));
-      pushTokenRegisteredRef.current = true;
-      console.log('✅ Push token registered successfully');
-    } catch (error) {
-      console.error('Error registering for push notifications:', error);
-    }
-  };
-
   // Check onboarding status on mount
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -119,7 +89,6 @@ function RootLayoutContent() {
       return;
     }
 
-    // Determine where to navigate
     let targetRoute: string | null = null;
 
     if (!hasSeenOnboarding) {
@@ -127,7 +96,6 @@ function RootLayoutContent() {
     } else if (!token || !user) {
       targetRoute = '/login';
     } else {
-      // User is authenticated, navigate based on role
       switch (user.role) {
         case 'Teacher':
           targetRoute = '/teacherHomeScreen';
@@ -143,72 +111,48 @@ function RootLayoutContent() {
       }
     }
 
-    // Get current route path
     const currentPath = segments.length > 0 ? `/${segments.join('/')}` : '/';
 
-    // Only navigate if we're not already at the target
     if (targetRoute && currentPath !== targetRoute) {
       navigationHandledRef.current = true;
       
-      // Use setTimeout to ensure navigation happens after mount
       setTimeout(() => {
         router.replace(targetRoute as any);
       }, 100);
     }
   }, [isReady, isLoading, hasSeenOnboarding, token, user, segments, router]);
 
-  // Initialize socket and push notifications when authenticated
+  // ✅ Update FCM token on server when user logs in
   useEffect(() => {
-    const setupConnections = async () => {
-      if (token && user && !socketInitializedRef.current) {
-        console.log('Setting up connections for user:', user.email);
+    const updateFCMToken = async () => {
+      if (token && user) {
+        console.log('📱 User authenticated, checking FCM token...');
         
-        socketInitializedRef.current = true;
-
-        try {
-          await initializeSocket(dispatch);
-          console.log('✅ Socket initialized');
-
-          await registerForPushNotificationsAsync();
-        } catch (error) {
-          console.error('Error setting up connections:', error);
-          socketInitializedRef.current = false;
+        // Check if there's a pending FCM token
+        const pendingToken = await AsyncStorage.getItem('pendingFcmToken');
+        
+        if (pendingToken) {
+          console.log('📤 Sending pending FCM token to server...');
+          await NotificationService.updateTokenOnServer(pendingToken);
+        } else {
+          // Get current token and send to server
+          const currentToken = await AsyncStorage.getItem('fcmToken');
+          if (currentToken) {
+            await NotificationService.updateTokenOnServer(currentToken);
+          }
         }
       }
     };
 
-    setupConnections();
+    updateFCMToken();
+  }, [token, user]);
 
-    return () => {
-      if (!token && socketInitializedRef.current) {
-        console.log('Cleaning up socket connection...');
-        disconnectSocket();
-        socketInitializedRef.current = false;
-        pushTokenRegisteredRef.current = false;
-        navigationHandledRef.current = false;
-      }
-    };
-  }, [token, user, dispatch]);
-
-  // Handle notification listeners
+  // Handle getMe error
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      return;
+    if (getMeError) {
+      Alert.alert('Authentication Error', getMeError);
     }
-
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📬 Notification received:', notification);
-    });
-
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('👆 Notification tapped:', response);
-    });
-
-    return () => {
-      notificationListener.remove();
-      responseListener.remove();
-    };
-  }, []);
+  }, [getMeError]);
 
   // Show loading screen while initializing
   if (!isReady || isLoading || hasSeenOnboarding === null) {
