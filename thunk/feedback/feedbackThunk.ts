@@ -22,7 +22,10 @@ export interface FeedbackState {
 // 1️⃣ Universal Get Test Feedbacks (Role-based)
 export const getTestFeedbacks = createAsyncThunk(
   "feedback/getTestFeedbacks",
-  async (_, { rejectWithValue }) => {
+  async (params: { test_id?: number } = {}, { rejectWithValue }) => {
+    if (!params?.test_id) {
+      return rejectWithValue("test_id is required");
+    }
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) {
@@ -31,7 +34,7 @@ export const getTestFeedbacks = createAsyncThunk(
 
       const response = await axios.post(
         `${USER_URL}/test-feedbacks`,
-        {},
+        { test_id: params.test_id },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -172,7 +175,39 @@ export const replyToFeedback = createAsyncThunk(
   }
 );
 
-// 5️⃣ Get My All Feedbacks (Student)
+// 5️⃣ Get All Feedbacks (Universal - Role-based)
+export const getAllFeedbacks = createAsyncThunk(
+  "feedback/getAllFeedbacks",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found");
+      }
+
+      const response = await axios.get(`${USER_URL}/all-feedbacks`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      });
+
+      console.log('getAllFeedbacks response:', response.data);
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{ error: string }>;
+        return rejectWithValue(
+          axiosError.response?.data?.error || axiosError.message || "Failed to get all feedbacks"
+        );
+      }
+      return rejectWithValue("An unexpected error occurred");
+    }
+  }
+);
+
 export const getMyAllFeedbacks = createAsyncThunk(
   "feedback/getMyAllFeedbacks",
   async (_, { rejectWithValue }) => {
@@ -181,16 +216,17 @@ export const getMyAllFeedbacks = createAsyncThunk(
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
+    
 
-      const response = await axios.get(`${USER_URL}/my-feedbacks`, {
+      const response = await axios.get(`https://serversql-ek4h.onrender.com/api/user/my-feedbackss`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         timeout: 10000,
       });
-
-      return response.data;
+console.log(response?.data?.data,"vish")
+      return response?.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError<{ error: string }>;

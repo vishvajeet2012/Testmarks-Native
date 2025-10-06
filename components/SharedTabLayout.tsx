@@ -4,7 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { deleteNotification, fetchNotifications, markNotificationRead } from '@/thunk/NotificationService/notifcationThunk';
 import { getAuditLogs } from '@/thunk/admin/auditLog';
-import { getMyAllFeedbacks, getTestFeedbacks, replyToFeedback } from '@/thunk/feedback/feedbackThunk';
+import { getAllFeedbacks, replyToFeedback } from '@/thunk/feedback/feedbackThunk';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Platform, RefreshControl, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path, SvgProps } from 'react-native-svg';
@@ -448,21 +448,33 @@ function StudentFeedbackScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    dispatch(getMyAllFeedbacks());
+    dispatch(getAllFeedbacks());
   }, [dispatch]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await dispatch(getMyAllFeedbacks());
+    await dispatch(getAllFeedbacks());
     setRefreshing(false);
   }, [dispatch]);
-
+  const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
+    test.feedbacks.map((feedback: any) => ({
+      ...feedback,
+      test_name: test.test_name,
+      subject_name: test.subject_name,
+      teacher_name: test.teacher_name,
+      date_conducted: test.date_conducted,
+      marks_obtained: test.marks_obtained,
+      max_marks: test.max_marks,
+      percentage: test.percentage,
+    }))
+  );
+console.log(flattenedFeedbacks,"test")
   const renderFeedbackItem = ({ item }: { item: any }) => (
     <ThemedView style={styles.feedbackItem}>
       <View style={styles.feedbackItemHeader}>
         <ThemedText style={styles.feedbackTestName}>{item.test_name}</ThemedText>
         <ThemedText style={styles.feedbackDate}>
-          {new Date(item.created_at).toLocaleDateString()}
+          {new Date(item.date_conducted).toLocaleDateString()}
         </ThemedText>
       </View>
       <ThemedText style={styles.feedbackMessage}>{item.message}</ThemedText>
@@ -506,7 +518,7 @@ function StudentFeedbackScreen() {
         </ThemedView>
       ) : (
         <FlatList
-          data={feedbacks}
+          data={flattenedFeedbacks}
           keyExtractor={(item) => item?.feedback_id?.toString()}
           renderItem={renderFeedbackItem}
           showsVerticalScrollIndicator={false}
@@ -533,14 +545,29 @@ function TeacherFeedbackScreen() {
   const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
-    dispatch(getTestFeedbacks());
+    dispatch(getAllFeedbacks());
   }, [dispatch]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await dispatch(getTestFeedbacks());
+    await dispatch(getAllFeedbacks());
     setRefreshing(false);
   }, [dispatch]);
+
+  console.log('Admin feedbacks:', feedbacks);
+
+  const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
+    test.students.flatMap((student: any) =>
+      student.feedbacks.map((feedback: any) => ({
+        ...feedback,
+        test_name: test.test_name,
+        student_name: student.student_name,
+        teacher_name: test.teacher_name,
+      }))
+    )
+  );
+
+  console.log('flattenedFeedbacks:', flattenedFeedbacks);
 
   const handleReply = (feedback: any) => {
     setSelectedFeedback(feedback);
@@ -606,7 +633,7 @@ function TeacherFeedbackScreen() {
         <ThemedText style={styles.feedbackSubtitle}>View and reply to student feedback</ThemedText>
       </View>
 
-      {feedbacks.length === 0 ? (
+      {flattenedFeedbacks.length === 0 ? (
         <ThemedView style={styles.emptyState}>
           <StarIcon size={64} color="#C7C7CC" filled={false} />
           <ThemedText type="subtitle" style={styles.emptyStateTitle}>
@@ -618,7 +645,7 @@ function TeacherFeedbackScreen() {
         </ThemedView>
       ) : (
         <FlatList
-          data={feedbacks}
+          data={flattenedFeedbacks}
           keyExtractor={(item) => item?.feedback_id?.toString()}
           renderItem={renderFeedbackItem}
           showsVerticalScrollIndicator={false}
@@ -678,14 +705,30 @@ function AdminFeedbackScreen() {
   const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
-    dispatch(getTestFeedbacks());
+    console.log('AdminFeedbackScreen useEffect');
+    dispatch(getAllFeedbacks());
   }, [dispatch]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    await dispatch(getTestFeedbacks());
+    await dispatch(getAllFeedbacks());
     setRefreshing(false);
   }, [dispatch]);
+
+  console.log('Admin feedbacks:', feedbacks);
+
+  const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
+    test.students.flatMap((student: any) =>
+      student.feedbacks.map((feedback: any) => ({
+        ...feedback,
+        test_name: test.test_name,
+        student_name: student.student_name,
+        teacher_name: test.teacher_name,
+      }))
+    )
+  );
+
+  console.log('flattenedFeedbacks:', flattenedFeedbacks);
 
   const handleReply = (feedback: any) => {
     setSelectedFeedback(feedback);
@@ -752,7 +795,7 @@ function AdminFeedbackScreen() {
         <ThemedText style={styles.feedbackSubtitle}>Manage all student feedback</ThemedText>
       </View>
 
-      {feedbacks.length === 0 ? (
+      {flattenedFeedbacks.length === 0 ? (
         <ThemedView style={styles.emptyState}>
           <StarIcon size={64} color="#C7C7CC" filled={false} />
           <ThemedText type="subtitle" style={styles.emptyStateTitle}>
@@ -764,7 +807,7 @@ function AdminFeedbackScreen() {
         </ThemedView>
       ) : (
         <FlatList
-          data={feedbacks}
+          data={flattenedFeedbacks}
           keyExtractor={(item) => item?.feedback_id?.toString()}
           renderItem={renderFeedbackItem}
           showsVerticalScrollIndicator={false}

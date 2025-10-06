@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect } from 'react';
-import { Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { useDispatch, useSelector } from 'react-redux';
+import { approveMarkAsync, fetchPendingMarksAsync, rejectMarkAsync } from '../redux/slice/adminTestMarksSlice';
 import { AppDispatch, RootState } from '../redux/store';
 import { getAdminAnalytics } from '../thunk/admin/adminAnalytics';
 
@@ -14,10 +15,55 @@ export default function AdminAnalyticsChart() {
   const { data, loading, error } = useSelector(
     (state: RootState) => state.adminAnalytics as { data: any; loading: boolean; error: string | null }
   );
+  const { pendingMarks, loading: marksLoading } = useSelector(
+    (state: RootState) => state.adminTestMarks
+  );
 
   useEffect(() => {
     dispatch(getAdminAnalytics());
+    dispatch(fetchPendingMarksAsync());
   }, [dispatch]);
+
+  const handleApprove = (marks_id: number) => {
+    dispatch(approveMarkAsync(marks_id))
+      .unwrap()
+      .then(() => {
+        Alert.alert('Success', 'Mark approved successfully');
+        dispatch(fetchPendingMarksAsync());
+      })
+      .catch((err) => {
+        Alert.alert('Error', err || 'Failed to approve mark');
+      });
+  };
+
+  const handleReject = (marks_id: number) => {
+    Alert.prompt(
+      'Reject Mark',
+      'Please provide a reason for rejection (optional):',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reject',
+          onPress: (reason: string | undefined) => {
+            dispatch(rejectMarkAsync({ marks_id, reason }))
+              .unwrap()
+              .then(() => {
+                Alert.alert('Success', 'Mark rejected successfully');
+                dispatch(fetchPendingMarksAsync());
+              })
+              .catch((err) => {
+                Alert.alert('Error', err || 'Failed to reject mark');
+              });
+          },
+          style: 'destructive',
+        },
+      ],
+      'plain-text'
+    );
+  };
 
   const onRefresh = () => {
     dispatch(getAdminAnalytics());
@@ -400,6 +446,26 @@ export default function AdminAnalyticsChart() {
                   {analyticsData.pending_actions.marks_pending_approval} marks awaiting approval
                 </Text>
               </View>
+              {/* List pending marks with approve/reject buttons */}
+              {pendingMarks.length > 0 && pendingMarks.map((mark) => (
+                <View key={mark.marks_id} style={{ marginTop: 8, padding: 8, backgroundColor: '#FFF8E1', borderRadius: 8 }}>
+                  <Text style={{ fontWeight: 'bold' }}>{mark.student_name} - {mark.class_name} - {mark.subject_name}</Text>
+                  <View style={{ flexDirection: 'row', marginTop: 4 }}>
+                    <TouchableOpacity
+                      style={[styles.approveButton]}
+                      onPress={() => handleApprove(mark.marks_id)}
+                    >
+                      <Text style={styles.buttonText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.rejectButton]}
+                      onPress={() => handleReject(mark.marks_id)}
+                    >
+                      <Text style={styles.buttonText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
           </View>
         </View>
@@ -828,5 +894,23 @@ const styles = StyleSheet.create({
   teacherMetricText: {
     fontSize: 12,
     color: '#666',
+  },
+  approveButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  rejectButton: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

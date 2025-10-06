@@ -3,6 +3,7 @@ import {
   editFeedback,
   Feedback,
   FeedbackState,
+  getAllFeedbacks,
   getMyAllFeedbacks,
   getTestFeedbacks,
   replyToFeedback
@@ -115,6 +116,27 @@ const feedbackSlice = createSlice({
         state.error = typeof action.payload === 'string' ? action.payload : "Failed to get test feedbacks";
       })
 
+      // Get All Feedbacks
+      .addCase(getAllFeedbacks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(getAllFeedbacks.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.error = null;
+        console.log('getAllFeedbacks fulfilled payload:', action.payload);
+        if (action.payload.data && Array.isArray(action.payload.data)) {
+          state.feedbacks = action.payload.data as Feedback[];
+        }
+      })
+      .addCase(getAllFeedbacks.rejected, (state, action) => {
+        state.loading = false;
+        state.success = false;
+        state.error = typeof action.payload === 'string' ? action.payload : "Failed to get all feedbacks";
+      })
+
       // Get My All Feedbacks
       .addCase(getMyAllFeedbacks.pending, (state) => {
         state.loading = true;
@@ -125,6 +147,7 @@ const feedbackSlice = createSlice({
         state.loading = false;
         state.success = true;
         state.error = null;
+        console.log('getMyAllFeedbacks fulfilled payload:', action.payload);
         if (action.payload.data && Array.isArray(action.payload.data)) {
           state.feedbacks = action.payload.data as Feedback[];
         }
