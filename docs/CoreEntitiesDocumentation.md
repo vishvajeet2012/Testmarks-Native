@@ -8,7 +8,7 @@ This document provides an overview of the core entities managed in the frontend 
 
 **Purpose:** Manage user authentication state including login, registration, token management, and user details.
 
-**Key Properties:**
+**Key Propertiess:**
 - `user`: User object with id, name, email, mobile number, and other profile details.
 - `token`: JWT token string.
 - Actions: login, register, loadToken, logout.
