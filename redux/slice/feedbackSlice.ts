@@ -3,8 +3,6 @@ import {
   editFeedback,
   Feedback,
   FeedbackState,
-  getAllFeedbacks,
-  getMyAllFeedbacks,
   getTestFeedbacks,
   replyToFeedback
 } from "@/thunk/feedback/feedbackThunk";
@@ -117,46 +115,10 @@ const feedbackSlice = createSlice({
       })
 
       // Get All Feedbacks
-      .addCase(getAllFeedbacks.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.success = false;
-      })
-      .addCase(getAllFeedbacks.fulfilled, (state, action) => {
-        state.loading = false;
-        state.success = true;
-        state.error = null;
-        console.log('getAllFeedbacks fulfilled payload:', action.payload);
-        if (action.payload.data && Array.isArray(action.payload.data)) {
-          state.feedbacks = action.payload.data as Feedback[];
-        }
-      })
-      .addCase(getAllFeedbacks.rejected, (state, action) => {
-        state.loading = false;
-        state.success = false;
-        state.error = typeof action.payload === 'string' ? action.payload : "Failed to get all feedbacks";
-      })
+      // Removed from this slice as moved to getFeedbackSlice
 
       // Get My All Feedbacks
-      .addCase(getMyAllFeedbacks.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.success = false;
-      })
-      .addCase(getMyAllFeedbacks.fulfilled, (state, action) => {
-        state.loading = false;
-        state.success = true;
-        state.error = null;
-        console.log('getMyAllFeedbacks fulfilled payload:', action.payload);
-        if (action.payload.data && Array.isArray(action.payload.data)) {
-          state.feedbacks = action.payload.data as Feedback[];
-        }
-      })
-      .addCase(getMyAllFeedbacks.rejected, (state, action) => {
-        state.loading = false;
-        state.success = false;
-        state.error = typeof action.payload === 'string' ? action.payload : "Failed to get my feedbacks";
-      });
+      // Removed from this slice as moved to getFeedbackSlice
   },
 });
 

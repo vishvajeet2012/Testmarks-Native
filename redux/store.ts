@@ -12,6 +12,7 @@ import createClassReducer from "./slice/createClass";
 import createTestReducer from './slice/createTestSlice';
 import feedbackReducer from './slice/feedbackSlice';
 import classesgetallReducer from './slice/getAllClassbysection';
+import getFeedbackReducer from './slice/getFeedbackSlice';
 import { manageUserReducer } from './slice/manageuserSlice';
 import marksReducer from './slice/marksSlice';
 import notificationReducer from './slice/notificationSlice';
@@ -20,7 +21,6 @@ import studentAnalyticsReducer from './slice/studentscreen/studentAnalyticsSlice
 import teacherDashbordReducer from './slice/teacherDashbordSlice';
 import testRankingSlice from './slice/testRankingSlice';
 import userReducer from './slice/userSlice';
-
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -45,6 +45,7 @@ export const store = configureStore({
     studentAnalytics: studentAnalyticsReducer,
     notifications: notificationReducer,
     feedback: feedbackReducer,
+    getFeedback: getFeedbackReducer,
   },
 });
 

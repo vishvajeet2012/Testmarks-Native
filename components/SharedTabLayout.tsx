@@ -4,7 +4,8 @@ import { useAppDispatch, useAppSelector } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { deleteNotification, fetchNotifications, markNotificationRead } from '@/thunk/NotificationService/notifcationThunk';
 import { getAuditLogs } from '@/thunk/admin/auditLog';
-import { getAllFeedbacks, replyToFeedback } from '@/thunk/feedback/feedbackThunk';
+import { replyToFeedback } from '@/thunk/feedback/feedbackThunk';
+import { getAllFeedbacks } from '@/thunk/feedback/getFeedbackThunk';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, Platform, RefreshControl, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Path, SvgProps } from 'react-native-svg';
@@ -443,7 +444,7 @@ function NotificationScreen() {
 
 function StudentFeedbackScreen() {
   const dispatch = useAppDispatch();
-  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
+  const { testFeedbacks: feedbacks, loading, error } = useAppSelector((state: any) => state.getFeedback);
   const colorScheme = useColorScheme();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -456,16 +457,16 @@ function StudentFeedbackScreen() {
     await dispatch(getAllFeedbacks());
     setRefreshing(false);
   }, [dispatch]);
-  const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
-    test.feedbacks.map((feedback: any) => ({
+  const flattenedFeedbacks = feedbacks?.flatMap((test: any) =>
+    (test?.feedbacks ?? []).map((feedback: any) => ({
       ...feedback,
-      test_name: test.test_name,
-      subject_name: test.subject_name,
-      teacher_name: test.teacher_name,
-      date_conducted: test.date_conducted,
-      marks_obtained: test.marks_obtained,
-      max_marks: test.max_marks,
-      percentage: test.percentage,
+      test_name: test?.test_name,
+      subject_name: test?.subject_name,
+      teacher_name: test?.teacher_name,
+      date_conducted: test?.date_conducted,
+      marks_obtained: test?.marks_obtained,
+      max_marks: test?.max_marks,
+      percentage: test?.percentage,
     }))
   );
 console.log(flattenedFeedbacks,"test")
@@ -538,7 +539,7 @@ console.log(flattenedFeedbacks,"test")
 
 function TeacherFeedbackScreen() {
   const dispatch = useAppDispatch();
-  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
+  const { testFeedbacks: feedbacks, loading, error } = useAppSelector((state: any) => state.getFeedback);
   const colorScheme = useColorScheme();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
@@ -557,12 +558,12 @@ function TeacherFeedbackScreen() {
   console.log('Admin feedbacks:', feedbacks);
 
   const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
-    test.students.flatMap((student: any) =>
-      student.feedbacks.map((feedback: any) => ({
+    (test?.students ?? []).flatMap((student: any) =>
+      (student?.feedbacks ?? []).map((feedback: any) => ({
         ...feedback,
-        test_name: test.test_name,
-        student_name: student.student_name,
-        teacher_name: test.teacher_name,
+        test_name: test?.test_name,
+        student_name: student?.student_name,
+        teacher_name: test?.teacher_name,
       }))
     )
   );
@@ -698,7 +699,7 @@ function TeacherFeedbackScreen() {
 
 function AdminFeedbackScreen() {
   const dispatch = useAppDispatch();
-  const { feedbacks, loading, error } = useAppSelector((state: any) => state.feedback);
+  const { testFeedbacks: feedbacks, loading, error } = useAppSelector((state: any) => state.getFeedback);
   const colorScheme = useColorScheme();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
@@ -718,12 +719,12 @@ function AdminFeedbackScreen() {
   console.log('Admin feedbacks:', feedbacks);
 
   const flattenedFeedbacks = feedbacks.flatMap((test: any) =>
-    test.students.flatMap((student: any) =>
-      student.feedbacks.map((feedback: any) => ({
+    (test?.students ?? []).flatMap((student: any) =>
+      (student?.feedbacks ?? []).map((feedback: any) => ({
         ...feedback,
-        test_name: test.test_name,
-        student_name: student.student_name,
-        teacher_name: test.teacher_name,
+        test_name: test?.test_name,
+        student_name: student?.student_name,
+        teacher_name: test?.teacher_name,
       }))
     )
   );
