@@ -1,81 +1,63 @@
-import notifee, { AndroidImportance } from '@notifee/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
-import { Platform } from 'react-native';
-
-// ✅ Your production URL from Render.com
-const API_URL = 'https://serversql-ek4h.onrender.com';
+import axios from 'axios';
+import { Serverurl } from '../utils/baseUrl';
 
 class NotificationService {
-  
-  static async initialize() {
-    console.log('📱 Initializing Firebase Notifications...');
-    console.log('🌐 API URL:', API_URL);
-    
-    await this.createNotificationChannel();
-    const hasPermission = await this.requestPermission();
-    
-    if (hasPermission) {
-      await this.getFCMToken();
+  private static fcmToken: string | null = null;
+  private static pendingPushToken: string | null = null;
+
+  static async initialize(): Promise<void> {
+    try {
+      console.log('🔄 Initializing NotificationService with Firebase FCM...');
+
+      // Request permission
+      const permissionGranted = await this.requestPermission();
+      if (!permissionGranted) {
+        console.log('❌ Notification permission denied');
+        return;
+      }
+
+      // Get FCM token
+      const token = await this.getFCMToken();
+      if (token) {
+        console.log('✅ FCM token obtained:', token.substring(0, 20) + '...');
+        await AsyncStorage.setItem('fcmToken', token);
+        this.fcmToken = token;
+      }
+
+      // Set up listeners
       this.setupListeners();
-    }
-    
-    console.log('✅ Firebase Notifications initialized');
-  }
 
-  static async createNotificationChannel() {
-    if (Platform.OS === 'android') {
-      await notifee.createChannel({
-        id: 'default_channel',
-        name: 'Default Notifications',
-        importance: AndroidImportance.HIGH,
-        sound: 'default',
-        vibration: true,
-      });
-      
-      console.log('📢 Notification channel created');
+      console.log('✅ NotificationService initialized successfully');
+    } catch (error) {
+      console.error('❌ Error initializing NotificationService:', error);
     }
   }
 
-  static async requestPermission(): Promise<boolean> {
+  private static async requestPermission(): Promise<boolean> {
     try {
       const authStatus = await messaging().requestPermission();
-      
+
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        console.log('✅ Notification permission granted');
-      } else {
-        console.log('❌ Notification permission denied');
+        console.log('✅ Notification permission granted:', authStatus);
       }
-
       return enabled;
     } catch (error) {
-      console.error('Error requesting permission:', error);
+      console.error('❌ Error requesting permission:', error);
       return false;
     }
   }
 
   static async getFCMToken(): Promise<string | null> {
     try {
+      // Get FCM token from Firebase
       const token = await messaging().getToken();
-      
       console.log('🔑 FCM Token:', token);
-      console.log('📝 Token Length:', token.length);
-      
-      await AsyncStorage.setItem('fcmToken', token);
-      
-      const authToken = await AsyncStorage.getItem('authToken');
-      
-      if (authToken) {
-        await this.updateTokenOnServer(token);
-      } else {
-        await AsyncStorage.setItem('pendingFcmToken', token);
-        console.log('⏳ Token saved for after login');
-      }
-      
       return token;
     } catch (error) {
       console.error('❌ Error getting FCM token:', error);
@@ -83,151 +65,118 @@ class NotificationService {
     }
   }
 
-  static async updateTokenOnServer(token: string) {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      
-      if (!authToken) {
-        console.log('⚠️  Not logged in, saving token for later');
-        await AsyncStorage.setItem('pendingFcmToken', token);
-        return { success: false, reason: 'Not authenticated' };
-      }
-
-      console.log('📤 Sending FCM token to server...');
-      console.log('🔗 API Endpoint:', `${API_URL}/api/user/update-push-token`);
-
-      const response = await fetch(`${API_URL}/api/user/update-push-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ push_token: token }),
-      });
-
-      const data = await response.json();
-      
-      console.log('📥 Server response:', data);
-      
-      if (data.success) {
-        console.log('✅ FCM token updated on server');
-        await AsyncStorage.removeItem('pendingFcmToken');
-      } else {
-        console.log('❌ Failed to update token:', data.message || data.error);
-      }
-
-      return data;
-    } catch (error: any) {
-      console.error('❌ Error updating token on server:', error.message);
-      return { success: false, error: error.message };
-    }
-  }
-
-  static setupListeners() {
+  private static setupListeners(): void {
     console.log('🎧 Setting up FCM listeners...');
 
-    // Foreground message
+    // Foreground message handler
     messaging().onMessage(async (remoteMessage) => {
       console.log('📨 Foreground notification:', remoteMessage);
-      
-      await notifee.displayNotification({
-        title: remoteMessage.notification?.title || 'Notification',
-        body: remoteMessage.notification?.body || '',
-        android: {
-          channelId: 'default_channel',
-          smallIcon: 'ic_notification',
-          pressAction: { id: 'default' },
-          sound: 'default',
-        },
-        data: remoteMessage.data,
-      });
+
+      // You can display local notification here if needed
+      // Or handle the message data directly in your app
     });
 
-    // Token refresh
-    messaging().onTokenRefresh((newToken) => {
-      console.log('🔄 Token refreshed:', newToken);
-      AsyncStorage.setItem('fcmToken', newToken);
-      this.updateTokenOnServer(newToken);
+    // Token refresh handler
+    messaging().onTokenRefresh(async (newToken) => {
+      console.log('🔄 FCM Token refreshed:', newToken);
+      this.fcmToken = newToken;
+      await AsyncStorage.setItem('fcmToken', newToken);
+      await this.updateTokenOnServer(newToken);
     });
 
-    // Notification opened app from background
+    // Background notification opened app
     messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('📱 App opened from notification (background):', remoteMessage);
       // Handle navigation based on remoteMessage.data
-      if (remoteMessage.data?.type) {
-        console.log('📍 Notification type:', remoteMessage.data.type);
-        // TODO: Add navigation logic here
-      }
     });
 
     // App opened from quit state
-    messaging().getInitialNotification().then((remoteMessage) => {
-      if (remoteMessage) {
-        console.log('📱 App opened from notification (quit state):', remoteMessage);
-        // Handle navigation based on remoteMessage.data
-        if (remoteMessage.data?.type) {
-          console.log('📍 Notification type:', remoteMessage.data.type);
-          // TODO: Add navigation logic here
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage) {
+          console.log('📱 App opened from notification (quit state):', remoteMessage);
+          // Handle navigation based on remoteMessage.data
         }
-      }
-    });
+      });
 
     console.log('✅ FCM listeners setup complete');
   }
 
-  static async clearBadge() {
+  static async updateTokenOnServer(token: string): Promise<void> {
     try {
-      await notifee.setBadgeCount(0);
-      console.log('✅ Badge cleared');
-    } catch (error) {
-      console.error('Error clearing badge:', error);
-    }
-  }
-
-  static async setBadgeCount(count: number) {
-    try {
-      await notifee.setBadgeCount(count);
-      console.log(`✅ Badge count set to ${count}`);
-    } catch (error) {
-      console.error('Error setting badge count:', error);
-    }
-  }
-
-  static async removePushToken() {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      
+      const authToken = await AsyncStorage.getItem('token');
       if (!authToken) {
-        console.log('⚠️  No auth token found');
+        console.log('⚠️ No auth token, saving push token as pending');
+        await AsyncStorage.setItem('pendingPushToken', token);
+        this.pendingPushToken = token;
         return;
       }
 
-      console.log('🗑️  Removing push token from server...');
+      console.log('📤 Updating FCM token on server...');
+      const response = await axios.post(
+        `$${Serverurl}/api/auth//update-push-token`,
+        { push_token: token }, // Changed from pushToken to push_token
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      const response = await fetch(`${API_URL}/api/user/remove-push-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-      });
+      if (response.status === 200 || response.data.success) {
+        console.log('✅ FCM token updated on server');
+        await AsyncStorage.removeItem('pendingPushToken');
+        this.pendingPushToken = null;
+      }
+    } catch (error) {
+      console.error('❌ Error updating token on server:', error);
+    }
+  }
 
-      const data = await response.json();
-      
-      if (data.success) {
-        console.log('✅ Push token removed from server');
-      } else {
-        console.log('❌ Failed to remove token:', data.message);
+  static async removePushToken(): Promise<void> {
+    try {
+      const authToken = await AsyncStorage.getItem('token');
+      if (!authToken) {
+        console.log('⚠️ No auth token for token removal');
+        return;
       }
 
-      // Clear local storage
-      await AsyncStorage.multiRemove(['fcmToken', 'pendingFcmToken']);
-      
-      return data;
-    } catch (error: any) {
-      console.error('❌ Error removing token:', error.message);
-      return { success: false, error: error.message };
+      console.log('🗑️ Removing FCM token from server...');
+      await axios.post(
+        `${Serverurl}/api/auth/remove-push-token`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log('✅ FCM token removed from server');
+      await AsyncStorage.removeItem('fcmToken');
+      await AsyncStorage.removeItem('pendingPushToken');
+      this.fcmToken = null;
+      this.pendingPushToken = null;
+    } catch (error) {
+      console.error('❌ Error removing token from server:', error);
     }
+  }
+
+  static async clearBadge(): Promise<void> {
+    try {
+      // Firebase doesn't have built-in badge clearing
+      // You might need a separate package for this
+      console.log('ℹ️ Badge clearing not implemented for Firebase FCM');
+    } catch (error) {
+      console.error('❌ Error clearing badge:', error);
+    }
+  }
+
+  static getToken(): string | null {
+    return this.fcmToken;
   }
 }
 

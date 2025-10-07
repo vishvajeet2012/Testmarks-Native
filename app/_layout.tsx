@@ -2,7 +2,6 @@ import LoadingScreen from '@/components/Loading';
 import { useAppDispatch } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { loadToken } from '@/redux/slice/authSlice';
-import { store } from '@/redux/store';
 import NotificationService from '@/services/NotificationService'; // ✅ Import Firebase service
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -11,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { Provider, useSelector } from 'react-redux';
+import { store } from '../redux/store';
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
@@ -91,7 +91,7 @@ function RootLayoutContent() {
 
     let targetRoute: string | null = null;
 
-    if (!hasSeenOnboarding) {
+    if (!hasSeenOnboarding && !token) {
       targetRoute = '/onboarding';
     } else if (!token || !user) {
       targetRoute = '/login';
@@ -129,8 +129,8 @@ function RootLayoutContent() {
         console.log('📱 User authenticated, checking FCM token...');
         
         // Check if there's a pending FCM token
-        const pendingToken = await AsyncStorage.getItem('pendingFcmToken');
-        
+        const pendingToken = await AsyncStorage.getItem('pendingPushToken');
+
         if (pendingToken) {
           console.log('📤 Sending pending FCM token to server...');
           await NotificationService.updateTokenOnServer(pendingToken);
@@ -166,6 +166,8 @@ function RootLayoutContent() {
         <Stack.Screen name="login" />
         <Stack.Screen name='adduserbyadmin' />
         <Stack.Screen name="Signup" />
+        <Stack.Screen name="add-class" />  {/* ✅ Add this line */}
+
         <Stack.Screen name="studentHomeScreen" />
         <Stack.Screen name="teacherHomeScreen" />
         <Stack.Screen name="manageUser" />

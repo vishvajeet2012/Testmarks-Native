@@ -131,7 +131,7 @@ export const login = createAsyncThunk<
       const pendingToken = await AsyncStorage.getItem('pendingFcmToken');
       
       if (pendingToken) {
-        console.log('📤 Sending pending FCM token to server...');
+        console.log('📤 Sending pending FCM toke  n to server...');
         await NotificationService.updateTokenOnServer(pendingToken);
       } else {
         // Get current FCM token
