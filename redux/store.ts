@@ -1,10 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
-import auditLogReducer from '../redux/slice/admin/auditLogSlice';
-import sectionReducer from "../redux/slice/sectionSlice/getSectionSlice";
-import addSectionTeacehr from '../thunk/section/addSectionTeacher';
+import addSectionTeacher from '../thunk/section/addSectionTeacher';
 import subjectReducer from '../thunk/subject/searchSubject';
 import teacherSearchReducer from "../thunk/teacher/teacherSearch";
 import adminAnalyticsReducer from './slice/admin/adminAnalyticsSlice';
+import auditLogReducer from './slice/admin/auditLogSlice';
 import adminTestMarksReducer from './slice/adminTestMarksSlice';
 import authReducer from './slice/authSlice';
 import classReducer from "./slice/classAndSectionbysearch";
@@ -16,6 +15,7 @@ import getFeedbackReducer from './slice/getFeedbackSlice';
 import { manageUserReducer } from './slice/manageuserSlice';
 import marksReducer from './slice/marksSlice';
 import notificationReducer from './slice/notificationSlice';
+import sectionReducer from "./slice/sectionSlice/getSectionSlice";
 import studentDashboardReducer from './slice/studentscreen/dashboardSlice';
 import studentAnalyticsReducer from './slice/studentscreen/studentAnalyticsSlice';
 import teacherDashbordReducer from './slice/teacherDashbordSlice';
@@ -34,7 +34,7 @@ export const store = configureStore({
     createTest: createTestReducer,
     teacherSearch: teacherSearchReducer,
     subject: subjectReducer,
-    addSectionTeacher: addSectionTeacehr,
+    addSectionTeacher: addSectionTeacher,
     marks: marksReducer,
     adminTestMarks: adminTestMarksReducer,
     testRanking: testRankingSlice,
