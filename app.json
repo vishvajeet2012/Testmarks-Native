@@ -24,22 +24,6 @@
       ]
     },
     "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/notifactionicon.png",
-          "color": "#ffffff",
-          "sounds": [],
-          "mode": "production",
-          "android": {
-            "icon": "./assets/images/notifactionicon.png",
-            "color": "#ffffff"
-          },
-          "ios": {
-            "sound": true
-          }
-        }
-      ],
       "expo-router",
       [
         "expo-splash-screen",
