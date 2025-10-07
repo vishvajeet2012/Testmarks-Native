@@ -8,12 +8,6 @@
     "scheme": "testmarkstypescript",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "notification": {
-      "icon": "./assets/images/notifactionicon.png",
-      "color": "#ffffff",
-      "androidMode": "default",
-      "androidCollapsedTitle": "#{unread_notifications} new notifications"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -30,6 +24,22 @@
       ]
     },
     "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notifactionicon.png",
+          "color": "#ffffff",
+          "sounds": [],
+          "mode": "production",
+          "android": {
+            "icon": "./assets/images/notifactionicon.png",
+            "color": "#ffffff"
+          },
+          "ios": {
+            "sound": true
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
