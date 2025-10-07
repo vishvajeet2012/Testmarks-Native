@@ -2,7 +2,6 @@
   "expo": {
     "name": "Testmarks-typeScript",
     "slug": "Testmarks-typeScript",
-    "projectId": "7d049180-adb4-44d8-95f3-2b21fbf43ea5",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -20,7 +19,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.TestmarkstypeScript",
+      "package": "school.nest",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "POST_NOTIFICATIONS",
@@ -41,7 +40,8 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ],
     "experiments": {
       "typedRoutes": true

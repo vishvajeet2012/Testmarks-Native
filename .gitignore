@@ -4,3 +4,9 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+echo ".expo/" >> .gitignore
+echo "android/" >> .gitignore
+.expo/
+android/
+ios/
