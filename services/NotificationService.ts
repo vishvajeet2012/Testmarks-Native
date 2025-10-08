@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Serverurl } from '../utils/baseUrl';
 
 class NotificationService {
@@ -114,24 +114,87 @@ class NotificationService {
       }
 
       console.log('📤 Updating FCM token on server...');
+      console.log(`📍 Server URL: ${Serverurl}/api/auth/update-push-token`);
+      console.log(`🔑 Token (first 20 chars): ${token.substring(0, 20)}...`);
+
       const response = await axios.post(
-        `$${Serverurl}/api/auth//update-push-token`,
-        { push_token: token }, // Changed from pushToken to push_token
+        `${Serverurl}/api/auth/update-push-token`,
+        { push_token: token },
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000, // 10 second timeout
         }
       );
 
       if (response.status === 200 || response.data.success) {
-        console.log('✅ FCM token updated on server');
+        console.log('✅ FCM token updated on server successfully');
+        console.log('📦 Response:', JSON.stringify(response.data, null, 2));
         await AsyncStorage.removeItem('pendingPushToken');
         this.pendingPushToken = null;
+      } else {
+        console.error('⚠️ Unexpected response:', response.data);
       }
     } catch (error) {
-      console.error('❌ Error updating token on server:', error);
+      // Detailed error logging
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        
+        console.error('❌ ===== AXIOS ERROR DETAILS =====');
+        console.error('📍 URL:', `${Serverurl}/api/auth/update-push-token`);
+        console.error('🔴 Error Message:', axiosError.message);
+        
+        if (axiosError.response) {
+          // Server responded with error status
+          console.error('📡 Response Status:', axiosError.response.status);
+          console.error('📦 Response Data:', JSON.stringify(axiosError.response.data, null, 2));
+          console.error('📋 Response Headers:', JSON.stringify(axiosError.response.headers, null, 2));
+        } else if (axiosError.request) {
+          // Request made but no response
+          console.error('📡 No Response Received');
+          console.error('🌐 Request Details:', axiosError.request);
+          console.error('💡 Possible Issues:');
+          console.error('   - Server is not running');
+          console.error('   - Wrong server URL');
+          console.error('   - Network connectivity issue');
+          console.error('   - Firewall blocking the request');
+          console.error('   - Phone and server not on same network');
+        } else {
+          // Request setup error
+          console.error('⚙️ Request Setup Error:', axiosError.message);
+        }
+        
+        if (axiosError.code) {
+          console.error('🔢 Error Code:', axiosError.code);
+          
+          // Specific error code explanations
+          switch (axiosError.code) {
+            case 'ECONNREFUSED':
+              console.error('💡 Connection refused - Server might not be running');
+              break;
+            case 'ENOTFOUND':
+              console.error('💡 Host not found - Check your server URL');
+              break;
+            case 'ETIMEDOUT':
+              console.error('💡 Request timed out - Server too slow or unreachable');
+              break;
+            case 'ERR_NETWORK':
+              console.error('💡 Network error - Check internet/WiFi connection');
+              break;
+            default:
+              console.error('💡 Unknown error code');
+          }
+        }
+        
+        console.error('❌ ===== END ERROR DETAILS =====');
+      } else {
+        // Non-axios error
+        console.error('❌ Non-Axios Error:', error);
+        console.error('❌ Error Type:', typeof error);
+        console.error('❌ Error String:', String(error));
+      }
     }
   }
 
@@ -144,7 +207,7 @@ class NotificationService {
       }
 
       console.log('🗑️ Removing FCM token from server...');
-      await axios.post(
+      const response = await axios.post(
         `${Serverurl}/api/auth/remove-push-token`,
         {},
         {
@@ -152,16 +215,30 @@ class NotificationService {
             Authorization: `Bearer ${authToken}`,
             'Content-Type': 'application/json',
           },
+          timeout: 10000,
         }
       );
 
       console.log('✅ FCM token removed from server');
+      console.log('📦 Response:', JSON.stringify(response.data, null, 2));
       await AsyncStorage.removeItem('fcmToken');
       await AsyncStorage.removeItem('pendingPushToken');
       this.fcmToken = null;
       this.pendingPushToken = null;
     } catch (error) {
-      console.error('❌ Error removing token from server:', error);
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError;
+        console.error('❌ Error removing token:', axiosError.message);
+        
+        if (axiosError.response) {
+          console.error('📡 Status:', axiosError.response.status);
+          console.error('📦 Data:', axiosError.response.data);
+        } else if (axiosError.request) {
+          console.error('📡 No response received from server');
+        }
+      } else {
+        console.error('❌ Error removing token:', error);
+      }
     }
   }
 
