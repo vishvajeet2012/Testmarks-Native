@@ -2,7 +2,7 @@ import LoadingScreen from '@/components/Loading';
 import { useAppDispatch } from '@/hooks/reduxhooks';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { loadToken } from '@/redux/slice/authSlice';
-import NotificationService from '@/services/NotificationService'; // ✅ Import Firebase service
+import NotificationService from '@/services/NotificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -21,12 +21,12 @@ function RootLayoutContent() {
   const segments = useSegments();
   
   const navigationHandledRef = useRef(false);
-  const fcmInitializedRef = useRef(false); // ✅ Track FCM initialization
+  const fcmInitializedRef = useRef(false);
 
   const authState = useSelector((state: any) => state.auth);
   const { token, user, isLoading, getMeError } = authState;
 
-  // ✅ Initialize Firebase FCM on app start
+  // ✅ Initialize Firebase FCM + Expo Notifications on app start
   useEffect(() => {
     const initializeFirebase = async () => {
       if (!fcmInitializedRef.current) {
@@ -79,6 +79,11 @@ function RootLayoutContent() {
     checkOnboardingStatus();
   }, []);
 
+  // ✅ FIXED: Reset navigationHandledRef when token or onboarding status changes
+  useEffect(() => {
+    navigationHandledRef.current = false;
+  }, [token, hasSeenOnboarding]);
+
   // Handle navigation after everything is ready
   useEffect(() => {
     if (!isReady || isLoading || hasSeenOnboarding === null) {
@@ -91,11 +96,15 @@ function RootLayoutContent() {
 
     let targetRoute: string | null = null;
 
-    if (!hasSeenOnboarding && !token) {
+    // ✅ FIXED: Priority order - Onboarding first, then auth
+    if (!hasSeenOnboarding) {
+      // Show onboarding if user hasn't seen it, regardless of token
       targetRoute = '/onboarding';
     } else if (!token || !user) {
+      // User has seen onboarding but not logged in
       targetRoute = '/login';
     } else {
+      // User is authenticated, route based on role
       switch (user.role) {
         case 'Teacher':
           targetRoute = '/teacherHomeScreen';
@@ -128,14 +137,12 @@ function RootLayoutContent() {
       if (token && user) {
         console.log('📱 User authenticated, checking FCM token...');
         
-        // Check if there's a pending FCM token
         const pendingToken = await AsyncStorage.getItem('pendingPushToken');
 
         if (pendingToken) {
           console.log('📤 Sending pending FCM token to server...');
           await NotificationService.updateTokenOnServer(pendingToken);
         } else {
-          // Get current token and send to server
           const currentToken = await AsyncStorage.getItem('fcmToken');
           if (currentToken) {
             await NotificationService.updateTokenOnServer(currentToken);
@@ -164,10 +171,9 @@ function RootLayoutContent() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="onboarding" />
         <Stack.Screen name="login" />
-        <Stack.Screen name='adduserbyadmin' />
+        <Stack.Screen name="adduserbyadmin" />
         <Stack.Screen name="Signup" />
-        <Stack.Screen name="add-class" />  {/* ✅ Add this line */}
-
+        <Stack.Screen name="add-class" />
         <Stack.Screen name="studentHomeScreen" />
         <Stack.Screen name="teacherHomeScreen" />
         <Stack.Screen name="manageUser" />
