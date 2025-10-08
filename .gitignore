@@ -3,9 +3,7 @@
 dist/
 web-build/
 
-# Native
-android/
-ios/
+
 
 # Dependencies
 node_modules/
