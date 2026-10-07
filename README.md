@@ -1,50 +1,51 @@
-# Welcome to your Expo app 👋
+# TestMarks (Mobile App)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+TestMarks is a school test and marks management app. Admins, teachers and students each get their own home screen: admins manage users, classes, sections and subjects; teachers create tests and enter marks; students see their results, rankings and analytics.
 
-## Get started
+This repository is the **React Native (Expo) mobile app**. The backend API lives in [vishvajeet2012/serversql](https://github.com/vishvajeet2012/serversql).
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Role-based app:** separate admin, teacher and student home screens, with sign-up, login, onboarding and forgot-password flows
+- **Admin tools:** add and manage users, class and section management, assign teachers to sections, admin analytics charts
+- **Teachers:** create and manage tests, enter marks for their sections
+- **Students:** dashboard and analytics screen for their own test performance
+- **Feedback** on tests between students and teachers
+- **Push notifications** with Firebase Cloud Messaging (`@react-native-firebase/messaging`)
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+- React Native with Expo and Expo Router (file-based routing)
+- TypeScript
+- Redux Toolkit with async thunks for API calls, Axios
+- Firebase Cloud Messaging for notifications
+- EAS for builds
 
-In the output, you'll find options to open the app in a
+## Project structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+app/         Screens (Expo Router): login, admin/teacher/student home, tests, classes, sections
+components/  Shared UI components
+redux/       Store and slices (auth, user, manageUser, feedback)
+thunk/       Async API calls grouped by feature
+services/    Notification service
+utils/       API base URLs
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting started
 
-## Learn more
+Requirements: Node.js 18+ and an Android emulator, iOS simulator or physical device. Push notifications need a development build, not Expo Go.
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+git clone https://github.com/vishvajeet2012/Testmarks-Native.git
+cd Testmarks-Native
+npm install
+npx expo start          # start the dev server
+npm run android         # or build and run on Android
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Point `utils/baseUrl.ts` at your running instance of the [TestMarks API](https://github.com/vishvajeet2012/serversql).
 
-## Join the community
+## Author
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Built by [Vishvajeet Shukla](https://www.vishvajeetshukla.in).
